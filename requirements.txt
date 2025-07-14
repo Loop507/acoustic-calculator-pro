@@ -1,3 +1,2 @@
 streamlit
-fpdf2
-
+fpdf
