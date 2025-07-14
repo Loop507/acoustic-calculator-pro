@@ -104,6 +104,20 @@ else:
 st.metric("Potenza consigliata", f"{wattage} W")
 st.metric("Numero di casse", f"{speakers} ({config})")
 
+# --- Calcolo avanzato SPL ---
+st.header("🔬 Calcolo SPL Avanzato")
+with st.expander("Parametri Avanzati Casse Audio"):
+    spl_nominale = st.number_input("SPL (dB) a 1W/1m", min_value=70.0, max_value=110.0, value=90.0)
+    potenza_nominale = st.number_input("Potenza Nominale Cassa (W)", min_value=10.0, value=200.0)
+    distanza_ascolto = st.number_input("Distanza dell'ascoltatore (m)", min_value=0.5, value=4.0)
+    num_woofer = st.number_input("Numero di woofer", min_value=1, step=1, value=1)
+    tipo_diffusione = st.selectbox("Tipo di diffusione", ["Omnidirezionale", "A Tromba"])
+
+    fattore_direttività = 0 if tipo_diffusione == "Omnidirezionale" else 3
+    spl_effettivo = spl_nominale + 10 * math.log10(potenza_nominale) - 20 * math.log10(distanza_ascolto) + fattore_direttività + (10 * math.log10(num_woofer))
+
+    st.metric("SPL stimato all'ascoltatore", f"{spl_effettivo:.1f} dB")
+
 # --- Adattabilità per strumento selezionato ---
 st.header("🎼 Adattabilità per Strumento")
 instrument_data = {
@@ -138,16 +152,12 @@ if st.button("📥 Esporta in PDF"):
     pdf.cell(0, 10, f"RT60 stimato: {rt60:.2f} s", ln=True)
     pdf.cell(0, 10, f"Frequenza di Schroeder: {schroeder:.0f} Hz", ln=True)
     pdf.cell(0, 10, f"Proporzioni (L/W): {ratio_lw:.2f} -> {ratio_quality}", ln=True)
-    pdf.cell(0, 10, "Modi assiali:", ln=True)
-    for axis, freq in modes.items():
-        pdf.cell(0, 10, f" - {axis}: {freq:.1f} Hz", ln=True)
     pdf.cell(0, 10, f"Potenza consigliata: {wattage} W", ln=True)
     pdf.cell(0, 10, f"Numero casse: {speakers} ({config})", ln=True)
+    pdf.cell(0, 10, f"SPL stimato all'ascoltatore: {spl_effettivo:.1f} dB", ln=True)
     pdf.cell(0, 10, f"Adattabilita per {instrument}: {suitability}", ln=True)
-    pdf.cell(0, 10, f"RT60 ideale: {rt_range[0]}-{rt_range[1]} s", ln=True)
-    pdf.cell(0, 10, f"Volume ideale: {vol_range[0]}-{vol_range[1]} m3", ln=True)
 
-    pdf_output = pdf.output(dest='S').encode('latin1')
+    pdf_output = pdf.output(dest='S').encode('latin1', 'replace')
     pdf_buffer = io.BytesIO(pdf_output)
 
     st.download_button(
