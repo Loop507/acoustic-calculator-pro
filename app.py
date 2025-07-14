@@ -1,5 +1,3 @@
-# app.py
-
 import streamlit as st
 import math
 from fpdf import FPDF
@@ -104,37 +102,45 @@ potenza_nominale_cassa = st.number_input("Potenza Nominale Cassa (W)", min_value
 
 modello_ampli = st.text_input("Modello Amplificatore", value="Yamaha RX-V6A")
 
+# --- Numero casse con opzioni fisse ---
+st.header("🔊 Numero di casse e Subwoofer")
+
+speakers = st.selectbox("Numero di casse", options=[1, 2, 4, 8], index=1)  # default 2
+
+use_sub = st.checkbox("Include Subwoofer")
+num_subwoofer = 0
+if use_sub:
+    num_subwoofer = st.number_input("Numero di Subwoofer", min_value=1, max_value=8, value=1)
+
+# --- Materiali stanza ---
+st.header("🧱 Materiali delle Superfici")
+
+materiali_pareti = st.selectbox("Materiale Pareti", ["Cemento", "Cartongesso", "Mattone", "Legno", "Vetro"])
+materiale_pavimento = st.selectbox("Materiale Pavimento", ["Piastrelle", "Legno", "Moquette", "Cemento"])
+materiale_soffitto = st.selectbox("Materiale Soffitto", ["Cemento", "Cartongesso", "Legno", "Moquette"])
+
 # --- Calcolo amplificazione ---
-st.header("🔊 Amplificazione e Numero di Casse")
+st.header("🔊 Amplificazione consigliata")
+
 base_watt = math.ceil(volume * 2)
 rt_factor = 0.7 if rt60 > 1.0 else 1.3
 wattage = math.ceil(base_watt * rt_factor)
 
-max_dim = max(length, width)
-if max_dim > 15:
-    speakers = 4
-    config = "Stereo + Fill"
-elif max_dim > 8:
-    speakers = 2
-    config = "Stereo"
-else:
-    speakers = 1
-    config = "Mono"
-
 st.metric("Potenza consigliata", f"{wattage} W")
-st.metric("Numero di casse", f"{speakers} ({config})")
+st.metric("Numero di casse", f"{speakers} + {num_subwoofer} Subwoofer")
 
-potenza_finale_ampli = potenza_nominale_cassa * speakers
+potenza_finale_ampli = potenza_nominale_cassa * (speakers + num_subwoofer)
 st.metric("Potenza finale Amplificatore consigliata", f"{potenza_finale_ampli} W")
 
 # --- Calcolo avanzato SPL ---
 st.header("🔬 Calcolo SPL Avanzato")
 with st.expander("Parametri Avanzati Casse Audio"):
     distanza_ascoltatore = st.number_input("Distanza dell'Ascoltatore (m)", min_value=0.1, value=4.0)
-    num_woofer = st.number_input("Numero di Woofer", min_value=1, step=1, value=1)
+    num_woofer = st.number_input("Numero di Woofer per cassa", min_value=1, step=1, value=1)
 
     fattore_direttivita = 0 if tipo_diffusore == "Omnidirezionale" else 3
-    spl_effettivo = spl_nominale + 10 * math.log10(potenza_massima) - 20 * math.log10(distanza_ascoltatore) + fattore_direttivita + (10 * math.log10(num_woofer))
+    num_woofer_tot = num_woofer * speakers + num_subwoofer
+    spl_effettivo = spl_nominale + 10 * math.log10(potenza_massima) - 20 * math.log10(distanza_ascoltatore) + fattore_direttivita + (10 * math.log10(num_woofer_tot))
 
     st.metric("SPL stimato all'ascoltatore", f"{spl_effettivo:.1f} dB")
 
@@ -174,7 +180,7 @@ if st.button("📥 Esporta in PDF"):
     pdf.cell(0, 10, f"Frequenza di Schroeder: {schroeder:.0f} Hz", ln=True)
     pdf.cell(0, 10, f"Proporzioni (L/W): {ratio_lw:.2f} -> {ratio_quality}", ln=True)
     pdf.cell(0, 10, f"Potenza consigliata: {wattage} W", ln=True)
-    pdf.cell(0, 10, f"Numero casse: {speakers} ({config})", ln=True)
+    pdf.cell(0, 10, f"Numero casse: {speakers} + {num_subwoofer} Subwoofer", ln=True)
     pdf.cell(0, 10, f"Potenza finale Amplificatore consigliata: {potenza_finale_ampli} W", ln=True)
     pdf.cell(0, 10, f"SPL stimato all'ascoltatore: {spl_effettivo:.1f} dB", ln=True)
 
@@ -188,6 +194,11 @@ if st.button("📥 Esporta in PDF"):
     pdf.cell(0, 10, f"SPL Nominale: {spl_nominale} dB SPL", ln=True)
     pdf.cell(0, 10, f"Potenza Massima Cassa: {potenza_massima} W", ln=True)
     pdf.cell(0, 10, f"Potenza Nominale Cassa: {potenza_nominale_cassa} W", ln=True)
+
+    pdf.cell(0, 10, f"Materiale Pareti: {materiali_pareti}", ln=True)
+    pdf.cell(0, 10, f"Materiale Pavimento: {materiale_pavimento}", ln=True)
+    pdf.cell(0, 10, f"Materiale Soffitto: {materiale_soffitto}", ln=True)
+
     pdf.cell(0, 10, f"Modello Amplificatore: {modello_ampli}", ln=True)
 
     pdf_output = pdf.output(dest='S').encode('latin1', 'replace')
