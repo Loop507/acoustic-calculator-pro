@@ -1,16 +1,14 @@
 import streamlit as st
 import math
 
-# --- Configurazione pagina ---
 st.set_page_config(page_title="Calcolatore Acustico Pro", layout="centered")
 
-# --- Titolo ---
-st.title("🎧 Calcolatore Acustico Pro")
+st.title("🎧 Calcolatore Acustico Pro - Versione Avanzata")
 st.markdown("""
-Analisi acustica completa dell'ambiente per **registrazione**, **mixing**, **strumenti**, **podcast** e **amplificazione live**.
+Analisi acustica dettagliata per ambienti di registrazione, mixing, performance e amplificazione.
 """)
 
-# --- Input dimensioni ---
+# Input dimensioni ambiente
 st.header("📐 Dimensioni Ambiente")
 col1, col2, col3 = st.columns(3)
 with col1:
@@ -20,6 +18,17 @@ with col2:
 with col3:
     height = st.number_input("Altezza (m)", min_value=2.0, value=3.0, step=0.1)
 
+# Coefficienti di assorbimento superficiale
+st.header("🎛️ Assorbimento Superfici (valori da 0 a 1)")
+col1, col2, col3 = st.columns(3)
+with col1:
+    alpha_walls = st.slider("Pareti", 0.0, 1.0, 0.2, 0.01)
+with col2:
+    alpha_floor = st.slider("Pavimento", 0.0, 1.0, 0.1, 0.01)
+with col3:
+    alpha_ceiling = st.slider("Soffitto", 0.0, 1.0, 0.15, 0.01)
+
+# Tipo d'uso e strumento
 room_type = st.selectbox("Tipo di ambiente", ["Studio", "Home studio", "Sala prove", "Sala concerti", "Auditorium"])
 use_type = st.selectbox("Uso principale", ["Registrazione", "Mixing", "Rehearsal", "Performance", "Podcast"])
 instrument = st.selectbox("Strumento/Ensemble", [
@@ -27,61 +36,85 @@ instrument = st.selectbox("Strumento/Ensemble", [
     "Orchestra", "Sezione Archi", "Ottoni", "Coro", "DJ Set"
 ])
 
-# --- Calcoli base ---
+# Configurazione casse
+st.header("🔊 Configurazione Impianto")
+speaker_num = st.selectbox("Numero casse", [2, 4])
+subwoofer = st.checkbox("Includi Subwoofer")
+
+# Calcoli base
 volume = length * width * height
-surface = 2 * (length * width + length * height + width * height)
-rt60_base = 0.161 * volume / (0.25 * surface)
-rt60 = max(0.3, min(2.5, rt60_base))
-schroeder = math.sqrt(rt60 * 340 * 340 / (1.316 * volume))
+surface_area = 2 * (length*width + length*height + width*height)
+
+# Calcolo tempo di riverberazione RT60 per bande di frequenza (Sabine modificato)
+def rt60_sabine(volume, surface_area, alpha):
+    if alpha == 0:
+        return 10.0  # infinito virtuale se assorbimento zero
+    return 0.161 * volume / (alpha * surface_area)
+
+# Media ponderata assorbimento
+average_alpha = (alpha_walls * (2*(length*height + width*height)) + alpha_floor * (length*width) + alpha_ceiling * (length*width)) / surface_area
+
+# RT60 a banda larga (media)
+rt60 = rt60_sabine(volume, surface_area, average_alpha)
+rt60 = max(0.2, min(rt60, 3.0))
+
+# RT60 per frequenze standard - approssimazione semplice con variazione di coefficente alpha
+freq_bands = [125, 250, 500, 1000, 2000]
+alpha_freq = {
+    125: average_alpha * 0.8,
+    250: average_alpha * 0.85,
+    500: average_alpha * 0.9,
+    1000: average_alpha,
+    2000: average_alpha * 1.1,
+}
+
+rt60_bands = {f: rt60_sabine(volume, surface_area, max(alpha_freq[f],0.01)) for f in freq_bands}
+
+# Modi assiali base (Hz)
 modes = {
     'Lunghezza': 340 / (2 * length),
     'Larghezza': 340 / (2 * width),
     'Altezza': 340 / (2 * height)
 }
+
+# Proporzione stanza
 ratio_lw = length / width
 ratio_quality = "Ottima" if abs(ratio_lw - 1.618) < 0.3 else "Buona" if abs(ratio_lw - 1.618) < 0.6 else "Da migliorare"
 
-# --- Output risultati acustici ---
+# Output risultati
 st.header("📊 Risultati Acustici")
 st.metric("Volume", f"{volume:.1f} m³")
-st.metric("Superficie", f"{surface:.1f} m²")
-st.metric("RT60 stimato", f"{rt60:.2f} s")
-st.metric("Frequenza di Schroeder", f"{schroeder:.0f} Hz")
-st.write(f"**Proporzioni (L/W)**: {ratio_lw:.2f} → {ratio_quality}")
+st.metric("Superficie Totale", f"{surface_area:.1f} m²")
+st.metric("RT60 (media)", f"{rt60:.2f} s")
 
-with st.expander("📈 Modi Assiali"):
-    for axis, freq in modes.items():
-        st.write(f"• {axis}: {freq:.1f} Hz")
+st.write("**RT60 per frequenze (s):**")
+cols = st.columns(len(freq_bands))
+for i, f in enumerate(freq_bands):
+    cols[i].metric(f"{f} Hz", f"{rt60_bands[f]:.2f}")
 
-# --- Raccomandazioni acustiche ---
+st.write(f"**Proporzioni stanza (L/W)**: {ratio_lw:.2f} → {ratio_quality}")
+
+st.subheader("Modi assiali (Hz)")
+for axis, freq in modes.items():
+    st.write(f"- {axis}: {freq:.1f} Hz")
+
+# Raccomandazioni
 st.header("🧠 Raccomandazioni")
-if rt60 > 1.5:
-    st.subheader("🟥 RT60 troppo alto → Ambiente riverberante")
-    st.write("- Usa pannelli fonoassorbenti (20–30% delle superfici)")
-    st.write("- Inserisci bass traps negli angoli")
-    st.write("- Aggiungi tende pesanti o tappeti")
-elif rt60 < 0.4:
-    st.subheader("🟨 RT60 troppo basso → Ambiente troppo secco")
-    st.write("- Aggiungi pannelli diffusivi")
-    st.write("- Utilizza superfici riflettenti in alcune zone")
+
+if rt60 > 1.8:
+    st.warning("🟥 RT60 troppo alto → Ambiente riverberante. Consigli: pannelli fonoassorbenti, bass traps, tende/pavimenti morbidi.")
+elif rt60 < 0.3:
+    st.warning("🟨 RT60 troppo basso → Ambiente troppo secco. Consigli: superfici riflettenti, pannelli diffusivi.")
 
 if any(freq < 200 for freq in modes.values()):
-    st.subheader("🟥 Modi assiali problematici < 200 Hz")
-    st.write("- Installa bass traps profondi (> 20cm)")
-    st.write("- Posiziona i diffusori lontano dalle pareti")
+    st.warning("🟥 Modi assiali problematici < 200 Hz → Consiglio bass traps profondi (> 20cm) e posizionamento casse strategico.")
 
 if use_type.lower() == "registrazione":
-    st.subheader("🎙️ Setup consigliato per Registrazione")
-    st.write("- Crea una zona morta dietro il microfono")
-    st.write("- Isola lateralmente la postazione")
+    st.info("🎙️ Setup consigliato per Registrazione: zona morta dietro microfono e isolamento laterale.")
+elif use_type.lower() == "mixing":
+    st.info("🎛️ Setup consigliato per Mixing: trattamento prime riflessioni e posizionamento monitor a triangolo equilatero.")
 
-if use_type.lower() == "mixing":
-    st.subheader("🎛️ Setup consigliato per Mixing")
-    st.write("- Trattamento prime riflessioni (pareti e soffitto)")
-    st.write("- Posizionamento dei monitor a triangolo equilatero")
-
-# --- Calcolo amplificazione ---
-st.header("🔊 Amplificazione e Posizionamento Casse")
+# Calcolo potenza amplificazione
 base_watt = math.ceil(volume * 2)
 rt_factor = 0.7 if rt60 > 1.0 else 1.3
 wattage = math.ceil(base_watt * rt_factor)
@@ -97,25 +130,18 @@ else:
     speakers = 1
     config = "Mono"
 
-st.metric("Potenza consigliata", f"{wattage} W")
-st.metric("Numero di casse", f"{speakers} ({config})")
+# Override configurazione casse con input utente
+speakers = speaker_num
+config = f"{speakers}-channel"
+if subwoofer:
+    config += " + Subwoofer"
 
-# --- Disegno semplice schema casse ---
-st.subheader("📐 Schema Posizionamento Casse (esempio 2.1)")
-svg_code = '''
-<svg width="300" height="150" xmlns="http://www.w3.org/2000/svg">
-  <rect width="300" height="150" fill="white" stroke="black" stroke-width="2"/>
-  <circle cx="60" cy="75" r="10" fill="black"/>
-  <circle cx="240" cy="75" r="10" fill="black"/>
-  <circle cx="150" cy="120" r="8" fill="gray"/>
-  <text x="45" y="65" font-size="10">Cassa SX</text>
-  <text x="220" y="65" font-size="10">Cassa DX</text>
-  <text x="135" y="115" font-size="10">Sub</text>
-</svg>
-'''
-st.markdown(f"<div>{svg_code}</div>", unsafe_allow_html=True)
+st.header("🎚️ Configurazione Impianto")
+st.write(f"**Numero casse:** {speakers}")
+st.write(f"**Configurazione:** {config}")
+st.write(f"**Potenza consigliata totale:** {wattage} W")
 
-# --- Adattabilità per strumento selezionato ---
+# Adattabilità per strumento selezionato
 st.header("🎼 Adattabilità per Strumento")
 instrument_data = {
     "Voce/Podcast": ([0.3, 0.6], [20, 80]),
@@ -134,5 +160,5 @@ vol_ok = vol_range[0] <= volume <= vol_range[1]
 suitability = "Eccellente" if rt_ok and vol_ok else "Buona" if rt_ok or vol_ok else "Limitata"
 
 st.write(f"**Adattabilità per {instrument}**: {suitability}")
-st.write(f"RT60 ideale: {rt_range[0]}–{rt_range[1]}s | Attuale: {rt60:.2f}s → {'✅' if rt_ok else '❌'}")
-st.write(f"Volume ideale: {vol_range[0]}–{vol_range[1]}m³ | Attuale: {volume:.1f}m³ → {'✅' if vol_ok else '❌'}")
+st.write(f"RT60 ideale: {rt_range[0]}–{rt_range[1]} s | Attuale: {rt60:.2f} s → {'✅' if rt_ok else '❌'}")
+st.write(f"Volume ideale: {vol_range[0]}–{vol_range[1]} m³ | Attuale: {volume:.1f} m³ → {'✅' if vol_ok else '❌'}")
