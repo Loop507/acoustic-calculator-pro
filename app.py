@@ -9,13 +9,13 @@ import io
 st.set_page_config(page_title="Calcolatore Acustico Pro", layout="centered")
 
 # --- Titolo ---
-st.title("\U0001F3A7 Calcolatore Acustico Pro")
+st.title("🎧 Calcolatore Acustico Pro")
 st.markdown("""
 Analisi acustica completa dell'ambiente per **registrazione**, **mixing**, **strumenti**, **podcast** e **amplificazione live**.
 """)
 
 # --- Input dimensioni ---
-st.header("\U0001F4D0 Dimensioni Ambiente")
+st.header("📐 Dimensioni Ambiente")
 col1, col2, col3 = st.columns(3)
 with col1:
     length = st.number_input("Lunghezza (m)", min_value=1.0, value=10.0, step=0.1)
@@ -46,46 +46,46 @@ ratio_lw = length / width
 ratio_quality = "Ottima" if abs(ratio_lw - 1.618) < 0.3 else "Buona" if abs(ratio_lw - 1.618) < 0.6 else "Da migliorare"
 
 # --- Output risultati acustici ---
-st.header("\U0001F4CA Risultati Acustici")
+st.header("📊 Risultati Acustici")
 st.metric("Volume", f"{volume:.1f} m³")
 st.metric("Superficie", f"{surface:.1f} m²")
 st.metric("RT60 stimato", f"{rt60:.2f} s")
 st.metric("Frequenza di Schroeder", f"{schroeder:.0f} Hz")
 st.write(f"**Proporzioni (L/W)**: {ratio_lw:.2f} -> {ratio_quality}")
 
-with st.expander("\U0001F4C8 Modi Assiali"):
+with st.expander("📈 Modi Assiali"):
     for axis, freq in modes.items():
-        st.write(f"\u2022 {axis}: {freq:.1f} Hz")
+        st.write(f"• {axis}: {freq:.1f} Hz")
 
 # --- Raccomandazioni acustiche ---
-st.header("\U0001F9E0 Raccomandazioni")
+st.header("🧠 Raccomandazioni")
 if rt60 > 1.5:
-    st.subheader("\U0001F7E5 RT60 troppo alto -> Ambiente riverberante")
+    st.subheader("🟥 RT60 troppo alto -> Ambiente riverberante")
     st.write("- Usa pannelli fonoassorbenti (20–30% delle superfici)")
     st.write("- Inserisci bass traps negli angoli")
     st.write("- Aggiungi tende pesanti o tappeti")
 elif rt60 < 0.4:
-    st.subheader("\U0001F7E8 RT60 troppo basso -> Ambiente troppo secco")
+    st.subheader("🟨 RT60 troppo basso -> Ambiente troppo secco")
     st.write("- Aggiungi pannelli diffusivi")
     st.write("- Utilizza superfici riflettenti in alcune zone")
 
 if any(freq < 200 for freq in modes.values()):
-    st.subheader("\U0001F7E5 Modi assiali problematici < 200 Hz")
+    st.subheader("🟥 Modi assiali problematici < 200 Hz")
     st.write("- Installa bass traps profondi (> 20cm)")
     st.write("- Posiziona i diffusori lontano dalle pareti")
 
 if use_type.lower() == "registrazione":
-    st.subheader("\U0001F3A7 Setup consigliato per Registrazione")
+    st.subheader("🎙️ Setup consigliato per Registrazione")
     st.write("- Crea una zona morta dietro il microfono")
     st.write("- Isola lateralmente la postazione")
 
 if use_type.lower() == "mixing":
-    st.subheader("\U0001F3A7 Setup consigliato per Mixing")
+    st.subheader("🎛️ Setup consigliato per Mixing")
     st.write("- Trattamento prime riflessioni (pareti e soffitto)")
     st.write("- Posizionamento dei monitor a triangolo equilatero")
 
 # --- Calcolo amplificazione ---
-st.header("\U0001F50A Amplificazione e Numero di Casse")
+st.header("🔊 Amplificazione e Numero di Casse")
 base_watt = math.ceil(volume * 2)
 rt_factor = 0.7 if rt60 > 1.0 else 1.3
 wattage = math.ceil(base_watt * rt_factor)
@@ -105,7 +105,7 @@ st.metric("Potenza consigliata", f"{wattage} W")
 st.metric("Numero di casse", f"{speakers} ({config})")
 
 # --- Adattabilità per strumento selezionato ---
-st.header("\U0001F3BC Adattabilità per Strumento")
+st.header("🎼 Adattabilità per Strumento")
 instrument_data = {
     "Voce/Podcast": ([0.3, 0.6], [20, 80]),
     "Pianoforte": ([0.6, 1.2], [50, 200]),
@@ -127,7 +127,7 @@ st.write(f"RT60 ideale: {rt_range[0]}–{rt_range[1]}s | Attuale: {rt60:.2f}s ->
 st.write(f"Volume ideale: {vol_range[0]}–{vol_range[1]}m³ | Attuale: {volume:.1f}m³ -> {'✅' if vol_ok else '❌'}")
 
 # --- Esportazione PDF ---
-if st.button("\U0001F4C5 Esporta in PDF"):
+if st.button("📥 Esporta in PDF"):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
