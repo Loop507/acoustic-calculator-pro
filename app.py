@@ -9,13 +9,13 @@ import io
 st.set_page_config(page_title="Calcolatore Acustico Pro", layout="centered")
 
 # --- Titolo ---
-st.title("🎧 Calcolatore Acustico Pro")
+st.title("🎵 Calcolatore Acustico Pro")
 st.markdown("""
 Analisi acustica dell'ambiente per **registrazione**, **mixing**, **strumenti**, **podcast** e **amplificazione live**.
 """)
 
 # --- Input dimensioni ---
-st.header("📐 Dimensioni Ambiente")
+st.header("📏 Dimensioni Ambiente")
 col1, col2, col3 = st.columns(3)
 with col1:
     length = st.number_input("Lunghezza (m)", min_value=1.0, value=10.0, step=0.1)
@@ -47,35 +47,38 @@ ratio_quality = "Ottima" if abs(ratio_lw - 1.618) < 0.3 else "Buona" if abs(rati
 
 # --- Output risultati acustici ---
 st.header("📊 Risultati Acustici")
-st.metric("Volume", f"{volume:.1f} m³")
-st.metric("Superficie", f"{surface:.1f} m²")
-st.metric("RT60 stimato", f"{rt60:.2f} s")
-st.metric("Frequenza di Schroeder", f"{schroeder:.0f} Hz")
-st.write(f"**Proporzioni (L/W)**: {ratio_lw:.2f} -> {ratio_quality}")
+col1, col2 = st.columns(2)
+with col1:
+    st.metric("Volume", f"{volume:.1f} m³")
+    st.metric("Superficie", f"{surface:.1f} m²")
+    st.metric("RT60 stimato", f"{rt60:.2f} s")
+with col2:
+    st.metric("Frequenza di Schroeder", f"{schroeder:.0f} Hz")
+    st.write(f"**Proporzioni (L/W)**: {ratio_lw:.2f} → {ratio_quality}")
 
-with st.expander("📈 Modi Assiali"):
+with st.expander("🔧 Modi Assiali"):
     for axis, freq in modes.items():
         st.write(f"• {axis}: {freq:.1f} Hz")
 
 # --- Raccomandazioni acustiche ---
-st.header("🧠 Raccomandazioni")
+st.header("💡 Raccomandazioni")
 if rt60 > 1.5:
-    st.subheader("🟥 RT60 troppo alto - Ambiente riverberante")
+    st.subheader("🔊 RT60 troppo alto - Ambiente riverberante")
     st.write("- Usa pannelli fonoassorbenti (20-30% delle superfici)")
     st.write("- Inserisci bass traps negli angoli")
     st.write("- Aggiungi tende pesanti o tappeti")
 elif rt60 < 0.4:
-    st.subheader("🟨 RT60 troppo basso - Ambiente troppo secco")
+    st.subheader("🔇 RT60 troppo basso - Ambiente troppo secco")
     st.write("- Aggiungi pannelli diffusivi")
     st.write("- Utilizza superfici riflettenti in alcune zone")
 
 if any(freq < 200 for freq in modes.values()):
-    st.subheader("🟥 Modi assiali problematici sotto 200 Hz")
+    st.subheader("⚠️ Modi assiali problematici sotto 200 Hz")
     st.write("- Installa bass traps profondi (oltre 20 cm)")
     st.write("- Posiziona i diffusori lontano dalle pareti")
 
 if use_type.lower() == "registrazione":
-    st.subheader("🎙️ Setup consigliato per Registrazione")
+    st.subheader("🎤 Setup consigliato per Registrazione")
     st.write("- Crea una zona morta dietro il microfono")
     st.write("- Isola lateralmente la postazione")
 
@@ -100,7 +103,7 @@ potenza_massima = st.number_input("Potenza Massima Cassa (W)", min_value=50, val
 modello_ampli = st.text_input("Modello Amplificatore", value="Yamaha RX-V6A")
 
 # --- Calcolo amplificazione ---
-st.header("🔊 Amplificazione e Numero di Casse")
+st.header("🔌 Amplificazione e Numero di Casse")
 base_watt = math.ceil(volume * 2)
 rt_factor = 0.7 if rt60 > 1.0 else 1.3
 wattage = math.ceil(base_watt * rt_factor)
@@ -116,22 +119,25 @@ else:
     speakers = 1
     config = "Mono"
 
-st.metric("Potenza consigliata", f"{wattage} W")
-st.metric("Numero di casse", f"{speakers} ({config})")
+col1, col2 = st.columns(2)
+with col1:
+    st.metric("Potenza consigliata", f"{wattage} W")
+with col2:
+    st.metric("Numero di casse", f"{speakers} ({config})")
 
 # --- Calcolo avanzato SPL ---
-st.header("🔬 Calcolo SPL Avanzato")
+st.header("📈 Calcolo SPL Avanzato")
 with st.expander("Parametri Avanzati Casse Audio"):
     distanza_ascolto = st.number_input("Distanza dell'ascoltatore (m)", min_value=0.5, value=4.0)
     num_woofer = st.number_input("Numero di woofer", min_value=1, step=1, value=1)
 
-    fattore_direttività = 0 if tipo_diffusore == "Omnidirezionale" else 3
-    spl_effettivo = sensibilita + 10 * math.log10(potenza_massima) - 20 * math.log10(distanza_ascolto) + fattore_direttività + (10 * math.log10(num_woofer))
+fattore_direttività = 0 if tipo_diffusore == "Omnidirezionale" else 3
+spl_effettivo = sensibilita + 10 * math.log10(potenza_massima) - 20 * math.log10(distanza_ascolto) + fattore_direttività + (10 * math.log10(num_woofer))
 
-    st.metric("SPL stimato all'ascoltatore", f"{spl_effettivo:.1f} dB")
+st.metric("SPL stimato all'ascoltatore", f"{spl_effettivo:.1f} dB")
 
 # --- Adattabilità per strumento selezionato ---
-st.header("🎼 Adattabilità per Strumento")
+st.header("🎯 Adattabilità per Strumento")
 instrument_data = {
     "Voce/Podcast": ([0.3, 0.6], [20, 80]),
     "Pianoforte": ([0.6, 1.2], [50, 200]),
@@ -149,41 +155,47 @@ vol_ok = vol_range[0] <= volume <= vol_range[1]
 suitability = "Eccellente" if rt_ok and vol_ok else "Buona" if rt_ok or vol_ok else "Limitata"
 
 st.write(f"**Adattabilità per {instrument}**: {suitability}")
-st.write(f"RT60 ideale: {rt_range[0]}-{rt_range[1]}s | Attuale: {rt60:.2f}s -> {'✅' if rt_ok else '❌'}")
-st.write(f"Volume ideale: {vol_range[0]}-{vol_range[1]}m³ | Attuale: {volume:.1f}m³ -> {'✅' if vol_ok else '❌'}")
+st.write(f"RT60 ideale: {rt_range[0]}-{rt_range[1]}s | Attuale: {rt60:.2f}s → {'✅' if rt_ok else '❌'}")
+st.write(f"Volume ideale: {vol_range[0]}-{vol_range[1]}m³ | Attuale: {volume:.1f}m³ → {'✅' if vol_ok else '❌'}")
 
 # --- Esportazione PDF ---
-if st.button("📥 Esporta in PDF"):
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", size=12)
-
-    pdf.cell(0, 10, "Calcolatore Acustico Pro - Report", ln=True)
-    pdf.cell(0, 10, f"Dimensioni Ambiente: {length} x {width} x {height} m", ln=True)
-    pdf.cell(0, 10, f"Volume: {volume:.1f} m³", ln=True)
-    pdf.cell(0, 10, f"Superficie: {surface:.1f} m²", ln=True)
-    pdf.cell(0, 10, f"RT60 stimato: {rt60:.2f} s", ln=True)
-    pdf.cell(0, 10, f"Frequenza di Schroeder: {schroeder:.0f} Hz", ln=True)
-    pdf.cell(0, 10, f"Proporzioni (L/W): {ratio_lw:.2f} -> {ratio_quality}", ln=True)
-    pdf.cell(0, 10, f"Potenza consigliata: {wattage} W", ln=True)
-    pdf.cell(0, 10, f"Numero casse: {speakers} ({config})", ln=True)
-    pdf.cell(0, 10, f"SPL stimato all'ascoltatore: {spl_effettivo:.1f} dB", ln=True)
-
-    pdf.cell(0, 10, f"Marca Cassa: {marca_cassa}", ln=True)
-    pdf.cell(0, 10, f"Modello Cassa: {modello_cassa}", ln=True)
-    pdf.cell(0, 10, f"Tipo Diffusore: {tipo_diffusore}", ln=True)
-    pdf.cell(0, 10, f"Impedenza: {impedenza} Ohm", ln=True)
-    pdf.cell(0, 10, f"Risposta in Frequenza: {risposta_freq} Hz", ln=True)
-    pdf.cell(0, 10, f"Sensibilità: {sensibilita} dB SPL @1W/1m", ln=True)
-    pdf.cell(0, 10, f"Potenza Massima Cassa: {potenza_massima} W", ln=True)
-    pdf.cell(0, 10, f"Modello Amplificatore: {modello_ampli}", ln=True)
-
-    pdf_output = pdf.output(dest='S').encode('latin1', 'replace')
-    pdf_buffer = io.BytesIO(pdf_output)
-
-    st.download_button(
-        label="Download PDF",
-        data=pdf_buffer,
-        file_name="calcolatore_acustico_pro_report.pdf",
-        mime="application/pdf"
-    )
+if st.button("📄 Esporta in PDF"):
+    try:
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_font("Arial", size=12)
+        
+        pdf.cell(0, 10, "Calcolatore Acustico Pro - Report", ln=True)
+        pdf.cell(0, 10, f"Dimensioni Ambiente: {length} x {width} x {height} m", ln=True)
+        pdf.cell(0, 10, f"Volume: {volume:.1f} m³", ln=True)
+        pdf.cell(0, 10, f"Superficie: {surface:.1f} m²", ln=True)
+        pdf.cell(0, 10, f"RT60 stimato: {rt60:.2f} s", ln=True)
+        pdf.cell(0, 10, f"Frequenza di Schroeder: {schroeder:.0f} Hz", ln=True)
+        pdf.cell(0, 10, f"Proporzioni (L/W): {ratio_lw:.2f} -> {ratio_quality}", ln=True)
+        pdf.cell(0, 10, f"Potenza consigliata: {wattage} W", ln=True)
+        pdf.cell(0, 10, f"Numero casse: {speakers} ({config})", ln=True)
+        pdf.cell(0, 10, f"SPL stimato all'ascoltatore: {spl_effettivo:.1f} dB", ln=True)
+        
+        pdf.cell(0, 10, f"Marca Cassa: {marca_cassa}", ln=True)
+        pdf.cell(0, 10, f"Modello Cassa: {modello_cassa}", ln=True)
+        pdf.cell(0, 10, f"Tipo Diffusore: {tipo_diffusore}", ln=True)
+        pdf.cell(0, 10, f"Impedenza: {impedenza} Ohm", ln=True)
+        pdf.cell(0, 10, f"Risposta in Frequenza: {risposta_freq} Hz", ln=True)
+        pdf.cell(0, 10, f"Sensibilita: {sensibilita} dB SPL @1W/1m", ln=True)
+        pdf.cell(0, 10, f"Potenza Massima Cassa: {potenza_massima} W", ln=True)
+        pdf.cell(0, 10, f"Modello Amplificatore: {modello_ampli}", ln=True)
+        
+        pdf_output = pdf.output(dest='S').encode('latin1', 'replace')
+        pdf_buffer = io.BytesIO(pdf_output)
+        
+        st.download_button(
+            label="Download PDF",
+            data=pdf_buffer,
+            file_name="calcolatore_acustico_pro_report.pdf",
+            mime="application/pdf"
+        )
+        st.success("PDF generato con successo!")
+        
+    except Exception as e:
+        st.error(f"Errore nella generazione del PDF: {str(e)}")
+        st.info("Verifica che la libreria fpdf sia installata: pip install fpdf2")
