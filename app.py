@@ -58,8 +58,8 @@ def init_database():
     ]
     
     cursor.executemany('''
-        INSERT INTO speakers (brand, model, type, impedance, sensitivity, max_power, 
-                            freq_response_low, freq_response_high, directivity, price_range)
+        INSERT INTO speakers (brand, model, type, impedance, sensitivity, max_power,
+                             freq_response_low, freq_response_high, directivity, price_range)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', speakers_data)
     
@@ -91,8 +91,8 @@ def init_database():
     ]
     
     cursor.executemany('''
-        INSERT INTO materials (name, absorption_125, absorption_250, absorption_500, 
-                             absorption_1000, absorption_2000, absorption_4000)
+        INSERT INTO materials (name, absorption_125, absorption_250, absorption_500,
+                              absorption_1000, absorption_2000, absorption_4000)
         VALUES (?, ?, ?, ?, ?, ?, ?)
     ''', materials_data)
     
@@ -138,7 +138,7 @@ def calculate_room_modes(length, width, height, max_freq=300):
                     })
     return sorted(modes, key=lambda x: x['frequency'])
 
-def calculate_spl_coverage(speaker_x, speaker_y, room_length, room_width, 
+def calculate_spl_coverage(speaker_x, speaker_y, room_length, room_width,
                           sensitivity, power, directivity_angle=90):
     """Calcola la copertura SPL nella stanza"""
     x_points = np.linspace(0, room_length, 20)
@@ -161,18 +161,18 @@ def calculate_spl_coverage(speaker_x, speaker_y, room_length, room_width,
 
 # ===== INTERFACCIA PRINCIPALE =====
 def main():
-    # Inizializza database
+    # Inizializza database PRIMA di tutto
     conn = init_database()
     
     # Sidebar per navigazione
-    st.sidebar.title("🎵 Calcolatore Acustico Pro")
+    st.sidebar.title("🔊 Calcolatore Acustico Pro")
     page = st.sidebar.radio("Sezioni", [
-        "📏 Configurazione Base",
-        "📊 Analisi Avanzata", 
-        "🎛️ Sistema Audio",
+        "🏠 Configurazione Base",
+        "📊 Analisi Avanzata",
+        "🔊️ Sistema Audio",
         "📈 Visualizzazioni",
         "💾 Progetti Salvati",
-        "📄 Report Completo"
+        "📋 Report Completo"
     ])
     
     # Inizializza session state
@@ -185,11 +185,12 @@ def main():
         }
     
     # ===== CONFIGURAZIONE BASE =====
-    if page == "📏 Configurazione Base":
-        st.title("📏 Configurazione Base dell'Ambiente")
+    if page == "🏠 Configurazione Base":
+        st.title("🏠 Configurazione Base dell'Ambiente")
         
         # Nome progetto
-        project_name = st.text_input("Nome Progetto", value=st.session_state.current_project['name'])
+        project_name = st.text_input("Nome Progetto", 
+                                   value=st.session_state.current_project['name'])
         st.session_state.current_project['name'] = project_name
         
         # Dimensioni ambiente
@@ -197,13 +198,13 @@ def main():
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            length = st.number_input("Lunghezza (m)", min_value=1.0, max_value=100.0, 
+            length = st.number_input("Lunghezza (m)", min_value=1.0, max_value=100.0,
                                    value=st.session_state.current_project['room_dimensions']['length'], step=0.1)
         with col2:
-            width = st.number_input("Larghezza (m)", min_value=1.0, max_value=100.0, 
+            width = st.number_input("Larghezza (m)", min_value=1.0, max_value=100.0,
                                   value=st.session_state.current_project['room_dimensions']['width'], step=0.1)
         with col3:
-            height = st.number_input("Altezza (m)", min_value=2.0, max_value=20.0, 
+            height = st.number_input("Altezza (m)", min_value=2.0, max_value=20.0,
                                    value=st.session_state.current_project['room_dimensions']['height'], step=0.1)
         
         # Aggiorna session state
@@ -234,13 +235,13 @@ def main():
         
         with col1:
             room_type = st.selectbox("Tipo di ambiente", [
-                "Home Studio", "Studio Professionale", "Sala Prove", 
+                "Home Studio", "Studio Professionale", "Sala Prove",
                 "Auditorium", "Teatro", "Chiesa", "Sala Conferenze", "Podcast Studio"
             ])
         
         with col2:
             use_type = st.selectbox("Uso principale", [
-                "Registrazione Voce", "Registrazione Strumenti", "Mixing", 
+                "Registrazione Voce", "Registrazione Strumenti", "Mixing",
                 "Mastering", "Live Performance", "Rehearsal", "Podcast", "Conferenze"
             ])
         
@@ -311,16 +312,9 @@ def main():
         ))
         
         # Zone ideali per diversi usi
-        use_ranges = {
-            'Registrazione Voce': (0.2, 0.4),
-            'Mixing': (0.3, 0.5),
-            'Live Performance': (0.8, 1.2),
-            'Rehearsal': (0.5, 0.8)
-        }
-        
-        fig_rt60.add_hrect(y0=0.3, y1=0.5, fillcolor="green", opacity=0.2, 
+        fig_rt60.add_hrect(y0=0.3, y1=0.5, fillcolor="green", opacity=0.2,
                           annotation_text="Zona Ideale Mixing")
-        fig_rt60.add_hrect(y0=0.2, y1=0.4, fillcolor="blue", opacity=0.2, 
+        fig_rt60.add_hrect(y0=0.2, y1=0.4, fillcolor="blue", opacity=0.2,
                           annotation_text="Zona Ideale Registrazione")
         
         fig_rt60.update_layout(
@@ -340,7 +334,7 @@ def main():
         modes_df = pd.DataFrame(modes)
         
         # Grafico modi
-        fig_modes = px.scatter(modes_df, x='frequency', y='type', 
+        fig_modes = px.scatter(modes_df, x='frequency', y='type',
                               color='type', size_max=15,
                               title="Modi della Stanza sotto 300 Hz")
         fig_modes.update_layout(height=400)
@@ -353,18 +347,18 @@ def main():
             st.dataframe(problematic_modes[['frequency', 'type', 'nx', 'ny', 'nz']].round(1))
         
         # Raccomandazioni intelligenti
-        st.subheader("🎯 Raccomandazioni Intelligenti")
+        st.subheader("💡 Raccomandazioni Intelligenti")
         
         avg_rt60 = np.mean(rt60_values)
         recommendations = []
         
         if avg_rt60 > 1.5:
-            recommendations.append("🔊 Ambiente troppo riverberante - Aggiungere materiali fonoassorbenti")
+            recommendations.append("🔇 Ambiente troppo riverberante - Aggiungere materiali fonoassorbenti")
         elif avg_rt60 < 0.3:
-            recommendations.append("🔇 Ambiente troppo secco - Aggiungere superfici riflettenti")
+            recommendations.append("🔊 Ambiente troppo secco - Aggiungere superfici riflettenti")
         
         if len(problematic_modes) > 5:
-            recommendations.append("🎵 Troppi modi problematici - Installare bass trap negli angoli")
+            recommendations.append("🎯 Troppi modi problematici - Installare bass trap negli angoli")
         
         if abs(length/width - 1.618) > 0.5:
             recommendations.append("📐 Proporzioni non ottimali - Considerare trattamento asimmetrico")
@@ -373,8 +367,8 @@ def main():
             st.write(f"• {rec}")
     
     # ===== SISTEMA AUDIO =====
-    elif page == "🎛️ Sistema Audio":
-        st.title("🎛️ Configurazione Sistema Audio")
+    elif page == "🔊️ Sistema Audio":
+        st.title("🔊️ Configurazione Sistema Audio")
         
         # Database casse
         speakers_df = pd.read_sql_query("SELECT * FROM speakers", conn)
@@ -384,7 +378,7 @@ def main():
         
         col1, col2 = st.columns(2)
         with col1:
-            selected_speaker = st.selectbox("Modello Cassa", 
+            selected_speaker = st.selectbox("Modello Cassa",
                                           speakers_df['brand'] + ' ' + speakers_df['model'])
             
             # Ottieni dati cassa selezionata
@@ -462,7 +456,7 @@ def main():
         
         # Selettore visualizzazione
         viz_type = st.selectbox("Tipo Visualizzazione", [
-            "Mappa Copertura SPL", "Risposta in Frequenza 3D", 
+            "Mappa Copertura SPL", "Risposta in Frequenza 3D",
             "Simulazione Riflessioni", "Analisi Posizionamento"
         ])
         
@@ -610,283 +604,354 @@ def main():
                 height=500,
                 showlegend=True
             )
-            
-            st.plotly_chart(fig_room, use_container_width=True)
-            
-            # Calcolo tempi di arrivo
-            direct_distance = math.sqrt((listener_x - source_x)**2 + (listener_y - source_y)**2)
-            direct_time = direct_distance / 343  # velocità suono
-            
-            st.write(f"**Tempi di Arrivo:**")
-            st.write(f"• Suono diretto: {direct_time*1000:.1f} ms")
-            st.write(f"• Prima riflessione: {direct_time*1000 + 2:.1f} ms")
-            
-        elif viz_type == "Analisi Posizionamento":
-            st.subheader("Analisi Posizionamento Ottimale")
-            
-            # Griglia di posizioni
-            positions_x = np.linspace(length*0.1, length*0.9, 10)
-            positions_y = np.linspace(width*0.1, width*0.9, 8)
-            
-            # Calcolo score per ogni posizione
-            scores = []
-            for x in positions_x:
-                row_scores = []
-                for y in positions_y:
-                    # Score basato su distanza da pareti e centro
-                    wall_distance = min(x, length-x, y, width-y)
-                    center_distance = math.sqrt((x-length/2)**2 + (y-width/2)**2)
-                    
-                    # Score combinato (normalizzato)
-                    score = wall_distance * 0.6 + (1/(1+center_distance)) * 0.4
-                    row_scores.append(score)
-                scores.append(row_scores)
-            
-            # Heatmap posizioni
-            fig_pos = go.Figure(data=go.Heatmap(
-                z=scores,
-                x=positions_y,
-                y=positions_x,
-                colorscale='RdYlGn',
-                colorbar=dict(title="Score Posizionamento")
-            ))
-            
-            fig_pos.update_layout(
-                title="Analisi Posizionamento Ottimale",
-                xaxis_title="Larghezza (m)",
-                yaxis_title="Lunghezza (m)",
-                height=500
-            )
-            
-            st.plotly_chart(fig_pos, use_container_width=True)
+
+st.plotly_chart(fig_room, use_container_width=True)
+        
+        # Calcolo tempi di arrivo
+        st.subheader("Tempi di Arrivo")
+        
+        direct_distance = math.sqrt((listener_x - source_x)**2 + (listener_y - source_y)**2)
+        direct_time = direct_distance / 343  # velocità del suono
+        
+        # Riflessioni principali
+        reflections = []
+        
+        # Parete sinistra
+        refl_dist = math.sqrt((0 - source_x)**2 + (source_y - source_y)**2) + \
+                   math.sqrt((listener_x - 0)**2 + (listener_y - source_y)**2)
+        reflections.append(("Parete Sinistra", refl_dist / 343))
+        
+        # Parete destra
+        refl_dist = math.sqrt((length - source_x)**2 + (source_y - source_y)**2) + \
+                   math.sqrt((listener_x - length)**2 + (listener_y - source_y)**2)
+        reflections.append(("Parete Destra", refl_dist / 343))
+        
+        # Parete posteriore
+        refl_dist = math.sqrt((source_x - source_x)**2 + (0 - source_y)**2) + \
+                   math.sqrt((listener_x - source_x)**2 + (listener_y - 0)**2)
+        reflections.append(("Parete Posteriore", refl_dist / 343))
+        
+        # Parete anteriore
+        refl_dist = math.sqrt((source_x - source_x)**2 + (width - source_y)**2) + \
+                   math.sqrt((listener_x - source_x)**2 + (listener_y - width)**2)
+        reflections.append(("Parete Anteriore", refl_dist / 343))
+        
+        # Tabella tempi
+        reflection_data = []
+        reflection_data.append(("Suono Diretto", direct_time * 1000, 0))
+        
+        for name, time in reflections:
+            delay = (time - direct_time) * 1000
+            reflection_data.append((name, time * 1000, delay))
+        
+        refl_df = pd.DataFrame(reflection_data, columns=["Tipo", "Tempo (ms)", "Ritardo (ms)"])
+        st.dataframe(refl_df.round(2))
+
+    elif viz_type == "Analisi Posizionamento":
+        st.subheader("Analisi Posizionamento Ottimale")
+        
+        # Griglia di posizioni
+        positions_x = np.linspace(0.5, length-0.5, 10)
+        positions_y = np.linspace(0.5, width-0.5, 8)
+        
+        # Calcolo score per ogni posizione
+        scores = []
+        for px in positions_x:
+            row_scores = []
+            for py in positions_y:
+                # Score basato su distanza dalle pareti e simmetria
+                wall_distance = min(px, length-px, py, width-py)
+                center_distance = math.sqrt((px - length/2)**2 + (py - width/2)**2)
+                
+                # Score combinato (più alto è meglio)
+                score = wall_distance * 0.7 + (max(length, width) - center_distance) * 0.3
+                row_scores.append(score)
+            scores.append(row_scores)
+        
+        # Heatmap posizionamento
+        fig_pos = go.Figure(data=go.Heatmap(
+            z=scores,
+            x=positions_y,
+            y=positions_x,
+            colorscale='RdYlGn',
+            colorbar=dict(title="Score Posizionamento")
+        ))
+        
+        fig_pos.update_layout(
+            title="Analisi Posizionamento Ottimale",
+            xaxis_title="Larghezza (m)",
+            yaxis_title="Lunghezza (m)",
+            height=500
+        )
+        
+        st.plotly_chart(fig_pos, use_container_width=True)
+        
+        # Migliori posizioni
+        best_positions = []
+        scores_array = np.array(scores)
+        max_indices = np.unravel_index(np.argsort(scores_array.ravel())[-3:], scores_array.shape)
+        
+        for i in range(3):
+            x_idx, y_idx = max_indices[0][-(i+1)], max_indices[1][-(i+1)]
+            best_positions.append({
+                'Posizione': f"#{i+1}",
+                'X (m)': positions_x[x_idx],
+                'Y (m)': positions_y[y_idx],
+                'Score': scores_array[x_idx, y_idx]
+            })
+        
+        st.write("**Top 3 Posizioni Consigliate:**")
+        st.dataframe(pd.DataFrame(best_positions).round(2))
+
+# ===== PROGETTI SALVATI =====
+elif page == "💾 Progetti Salvati":
+    st.title("💾 Gestione Progetti")
     
-    # ===== PROGETTI SALVATI =====
-    elif page == "💾 Progetti Salvati":
-        st.title("💾 Gestione Progetti")
-        
-        # Simulazione salvataggio (in produzione useresti un database)
-        if 'saved_projects' not in st.session_state:
-            st.session_state.saved_projects = []
-        
-        # Salva progetto corrente
-        if st.button("💾 Salva Progetto Corrente"):
-            project_copy = st.session_state.current_project.copy()
-            project_copy['saved_date'] = datetime.now().strftime("%Y-%m-%d %H:%M")
+    # Simulazione sistema salvataggio (in produzione useresti un database)
+    if 'saved_projects' not in st.session_state:
+        st.session_state.saved_projects = []
+    
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        st.subheader("Progetto Corrente")
+        current = st.session_state.current_project
+        st.write(f"**Nome**: {current['name']}")
+        st.write(f"**Dimensioni**: {current['room_dimensions']['length']} x {current['room_dimensions']['width']} x {current['room_dimensions']['height']} m")
+        st.write(f"**Volume**: {current['room_dimensions']['length'] * current['room_dimensions']['width'] * current['room_dimensions']['height']:.1f} m³")
+    
+    with col2:
+        if st.button("💾 Salva Progetto"):
+            # Crea copia del progetto corrente
+            project_copy = {
+                'name': current['name'],
+                'saved_date': datetime.now().strftime("%Y-%m-%d %H:%M"),
+                'room_dimensions': current['room_dimensions'].copy(),
+                'materials': current['materials'].copy(),
+                'speakers': current['speakers'].copy() if 'speakers' in current else []
+            }
             st.session_state.saved_projects.append(project_copy)
-            st.success(f"Progetto '{project_copy['name']}' salvato!")
+            st.success("Progetto salvato!")
+    
+    # Lista progetti salvati
+    if st.session_state.saved_projects:
+        st.subheader("Progetti Salvati")
         
-        # Lista progetti salvati
-        if st.session_state.saved_projects:
-            st.subheader("Progetti Salvati")
-            
-            for i, project in enumerate(st.session_state.saved_projects):
-                with st.expander(f"📁 {project['name']} - {project['saved_date']}"):
-                    dims = project['room_dimensions']
-                    st.write(f"**Dimensioni:** {dims['length']}x{dims['width']}x{dims['height']} m")
-                    st.write(f"**Volume:** {dims['length']*dims['width']*dims['height']:.1f} m³")
-                    
-                    col1, col2, col3 = st.columns(3)
-                    with col1:
-                        if st.button(f"📂 Carica", key=f"load_{i}"):
-                            st.session_state.current_project = project.copy()
-                            st.success("Progetto caricato!")
-                            st.rerun()
-                    
-                    with col2:
-                        if st.button(f"📄 Esporta", key=f"export_{i}"):
-                            # Esportazione JSON
-                            json_data = json.dumps(project, indent=2)
-                            st.download_button(
-                                label="💾 Scarica JSON",
-                                data=json_data,
-                                file_name=f"{project['name']}.json",
-                                mime="application/json"
-                            )
-                    
-                    with col3:
-                        if st.button(f"🗑️ Elimina", key=f"delete_{i}"):
-                            st.session_state.saved_projects.pop(i)
-                            st.success("Progetto eliminato!")
-                            st.rerun()
-        
-        # Carica progetto da file
-        st.subheader("Carica Progetto da File")
-        uploaded_file = st.file_uploader("Seleziona file JSON", type=['json'])
-        
+        for i, project in enumerate(st.session_state.saved_projects):
+            with st.expander(f"{project['name']} - {project['saved_date']}"):
+                col1, col2, col3 = st.columns([2, 1, 1])
+                
+                with col1:
+                    st.write(f"**Dimensioni**: {project['room_dimensions']['length']} x {project['room_dimensions']['width']} x {project['room_dimensions']['height']} m")
+                    volume = project['room_dimensions']['length'] * project['room_dimensions']['width'] * project['room_dimensions']['height']
+                    st.write(f"**Volume**: {volume:.1f} m³")
+                
+                with col2:
+                    if st.button(f"🔄 Carica", key=f"load_{i}"):
+                        st.session_state.current_project = project.copy()
+                        st.success("Progetto caricato!")
+                        st.rerun()
+                
+                with col3:
+                    if st.button(f"🗑️ Elimina", key=f"delete_{i}"):
+                        st.session_state.saved_projects.pop(i)
+                        st.success("Progetto eliminato!")
+                        st.rerun()
+    
+    # Import/Export
+    st.subheader("Import/Export")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.write("**Export Progetto**")
+        if st.button("📤 Esporta JSON"):
+            project_json = json.dumps(st.session_state.current_project, indent=2)
+            st.download_button(
+                label="⬇️ Scarica JSON",
+                data=project_json,
+                file_name=f"{st.session_state.current_project['name']}.json",
+                mime="application/json"
+            )
+    
+    with col2:
+        st.write("**Import Progetto**")
+        uploaded_file = st.file_uploader("Carica JSON", type=['json'])
         if uploaded_file is not None:
             try:
                 project_data = json.load(uploaded_file)
                 st.session_state.current_project = project_data
-                st.success("Progetto caricato da file!")
-            except Exception as e:
-                st.error(f"Errore nel caricamento: {e}")
-    
-    # ===== REPORT COMPLETO =====
-    elif page == "📄 Report Completo":
-        st.title("📄 Report Completo del Progetto")
-        
-        project = st.session_state.current_project
-        dims = project['room_dimensions']
-        length, width, height = dims['length'], dims['width'], dims['height']
-        volume = length * width * height
-        
-        # Intestazione report
-        st.header(f"Report: {project['name']}")
-        st.write(f"**Data generazione:** {datetime.now().strftime('%Y-%m-%d %H:%M')}")
-        
-        # Sezione 1: Dati Ambiente
-        st.subheader("1. Dati Ambiente")
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            st.write("**Dimensioni:**")
-            st.write(f"• Lunghezza: {length} m")
-            st.write(f"• Larghezza: {width} m")  
-            st.write(f"• Altezza: {height} m")
-            st.write(f"• Volume: {volume:.1f} m³")
-        
-        with col2:
-            st.write("**Caratteristiche:**")
-            surface = 2 * (length * width + length * height + width * height)
-            st.write(f"• Superficie: {surface:.1f} m²")
-            st.write(f"• Rapporto L/W: {length/width:.2f}")
-            st.write(f"• Rapporto Volume/Superficie: {volume/surface:.2f}")
-        
-        # Sezione 2: Analisi Acustica
-        st.subheader("2. Analisi Acustica")
-        
-        # RT60 stimato
-        rt60_estimate = 0.161 * volume / (0.25 * surface)
-        st.write(f"**RT60 stimato:** {rt60_estimate:.2f} secondi")
-        
-        # Valutazione
-        if rt60_estimate < 0.3:
-            rt60_rating = "Troppo secco - Aggiungere superfici riflettenti"
-        elif rt60_estimate < 0.6:
-            rt60_rating = "Ottimo per registrazione e mixing"
-        elif rt60_estimate < 1.2:
-            rt60_rating = "Buono per esecuzioni live"
-        else:
-            rt60_rating = "Troppo riverberante - Aggiungere assorbimento"
-        
-        st.write(f"**Valutazione:** {rt60_rating}")
-        
-        # Modi problematici
-        modes = calculate_room_modes(length, width, height, max_freq=200)
-        st.write(f"**Modi sotto 200 Hz:** {len(modes)}")
-        
-        if len(modes) > 5:
-            st.warning("⚠️ Molti modi problematici - Consigliato bass trapping")
-        
-        # Sezione 3: Raccomandazioni
-        st.subheader("3. Raccomandazioni")
-        
-        recommendations = []
-        
-        # Proporzioni
-        golden_ratio_diff = abs(length/width - 1.618)
-        if golden_ratio_diff > 0.5:
-            recommendations.append("🔧 Considerare modifica proporzioni o trattamento asimmetrico")
-        
-        # RT60
-        if rt60_estimate > 1.0:
-            recommendations.append("🔊 Installare pannelli fonoassorbenti")
-        elif rt60_estimate < 0.3:
-            recommendations.append("🔇 Aggiungere superfici riflettenti")
-        
-        # Modi
-        if len(modes) > 5:
-            recommendations.append("🎵 Installare bass trap negli angoli")
-        
-        # Posizionamento
-        recommendations.append("📍 Posizionare monitor a 1/3 della lunghezza dalla parete")
-        recommendations.append("👂 Posizione ascolto a 38% della lunghezza")
-        
-        for rec in recommendations:
-            st.write(f"• {rec}")
-        
-        # Sezione 4: Specifiche Tecniche
-        st.subheader("4. Specifiche Tecniche")
-        
-        # Tabella riassuntiva
-        specs_data = {
-            'Parametro': ['Volume', 'Superficie', 'RT60 Stimato', 'Frequenza Schroeder', 'Modi < 200 Hz'],
-            'Valore': [
-                f"{volume:.1f} m³",
-                f"{surface:.1f} m²", 
-                f"{rt60_estimate:.2f} s",
-                f"{2000 * math.sqrt(rt60_estimate/volume):.0f} Hz",
-                f"{len(modes)}"
-            ]
-        }
-        
-        specs_df = pd.DataFrame(specs_data)
-        st.table(specs_df)
-        
-        # Genera PDF
-        st.subheader("5. Esportazione")
-        
-        if st.button("📄 Genera Report PDF"):
-            # Creazione PDF semplificata
-            class PDF(FPDF):
-                def header(self):
-                    self.set_font('Arial', 'B', 15)
-                    self.cell(0, 10, f'Report Acustico - {project["name"]}', 0, 1, 'C')
-                    self.ln(20)
-                
-                def footer(self):
-                    self.set_y(-15)
-                    self.set_font('Arial', 'I', 8)
-                    self.cell(0, 10, f'Pagina {self.page_no()}', 0, 0, 'C')
-            
-            pdf = PDF()
-            pdf.add_page()
-            pdf.set_font('Arial', '', 12)
-            
-            # Contenuto PDF
-            pdf.cell(0, 10, f'Dimensioni: {length}x{width}x{height} m', 0, 1)
-            pdf.cell(0, 10, f'Volume: {volume:.1f} m³', 0, 1)
-            pdf.cell(0, 10, f'RT60 Stimato: {rt60_estimate:.2f} s', 0, 1)
-            pdf.ln(10)
-            
-            pdf.cell(0, 10, 'Raccomandazioni:', 0, 1)
-            for rec in recommendations:
-                pdf.cell(0, 10, f'• {rec[2:]}', 0, 1)  # Rimuove emoji
-            
-            # Output PDF
-            pdf_output = pdf.output(dest='S').encode('latin-1')
-            
-            st.download_button(
-                label="💾 Scarica Report PDF",
-                data=pdf_output,
-                file_name=f"report_{project['name']}.pdf",
-                mime="application/pdf"
-            )
-        
-        # Esporta dati CSV
-        if st.button("📊 Esporta Dati CSV"):
-            # Crea CSV con tutti i dati
-            csv_data = {
-                'Parametro': ['Lunghezza', 'Larghezza', 'Altezza', 'Volume', 'RT60_Stimato', 'Modi_Problematici'],
-                'Valore': [length, width, height, volume, rt60_estimate, len(modes)]
-            }
-            
-            df = pd.DataFrame(csv_data)
-            csv_string = df.to_csv(index=False)
-            
-            st.download_button(
-                label="💾 Scarica Dati CSV",
-                data=csv_string,
-                file_name=f"dati_{project['name']}.csv",
-                mime="text/csv"
-            )
+                st.success("Progetto importato!")
+                st.rerun()
+            except:
+                st.error("Errore nel caricamento del file")
 
-# ===== FOOTER =====
+# ===== REPORT COMPLETO =====
+elif page == "📊 Report Completo":
+    st.title("📊 Report Completo del Progetto")
+    
+    current = st.session_state.current_project
+    dims = current['room_dimensions']
+    length, width, height = dims['length'], dims['width'], dims['height']
+    volume = length * width * height
+    
+    # Sezione 1: Informazioni Generali
+    st.header("1. Informazioni Generali")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.subheader("Progetto")
+        st.write(f"**Nome**: {current['name']}")
+        st.write(f"**Data**: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+        st.write(f"**Dimensioni**: {length} x {width} x {height} m")
+        st.write(f"**Volume**: {volume:.1f} m³")
+        st.write(f"**Superficie**: {2 * (length * width + length * height + width * height):.1f} m²")
+    
+    with col2:
+        st.subheader("Proporzioni")
+        ratio_lw = length / width
+        ratio_lh = length / height
+        ratio_wh = width / height
+        
+        st.write(f"**L/W**: {ratio_lw:.2f}")
+        st.write(f"**L/H**: {ratio_lh:.2f}")
+        st.write(f"**W/H**: {ratio_wh:.2f}")
+        
+        # Valutazione proporzioni
+        golden_ratio = abs(ratio_lw - 1.618)
+        if golden_ratio < 0.1:
+            st.success("✅ Proporzioni ottime (vicine al rapporto aureo)")
+        elif golden_ratio < 0.3:
+            st.warning("⚠️ Proporzioni buone")
+        else:
+            st.error("❌ Proporzioni da migliorare")
+    
+    # Sezione 2: Analisi Acustica
+    st.header("2. Analisi Acustica")
+    
+    # RT60 stimato
+    surface_materials = {
+        'walls': 2 * (length * height + width * height) * 0.8,
+        'ceiling': length * width,
+        'floor': length * width * 0.8,
+        'treatment': (2 * (length * height + width * height)) * 0.2
+    }
+    
+    frequencies, rt60_values = calculate_rt60_per_band(volume, surface_materials)
+    avg_rt60 = np.mean(rt60_values)
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.subheader("RT60")
+        st.write(f"**RT60 Medio**: {avg_rt60:.2f} s")
+        
+        if avg_rt60 < 0.3:
+            st.warning("⚠️ Ambiente molto secco")
+        elif avg_rt60 < 0.8:
+            st.success("✅ RT60 ottimale per studio")
+        elif avg_rt60 < 1.5:
+            st.info("ℹ️ Buono per ambienti più grandi")
+        else:
+            st.error("❌ Troppo riverberante")
+    
+    with col2:
+        st.subheader("Modi della Stanza")
+        modes = calculate_room_modes(length, width, height)
+        problematic_modes = [m for m in modes if m['frequency'] < 200]
+        
+        st.write(f"**Modi totali < 300 Hz**: {len(modes)}")
+        st.write(f"**Modi problematici < 200 Hz**: {len(problematic_modes)}")
+        
+        if len(problematic_modes) > 8:
+            st.error("❌ Troppi modi problematici")
+        elif len(problematic_modes) > 4:
+            st.warning("⚠️ Alcuni modi problematici")
+        else:
+            st.success("✅ Distribuzione modi accettabile")
+    
+    # Sezione 3: Raccomandazioni
+    st.header("3. Raccomandazioni")
+    
+    recommendations = []
+    
+    # Raccomandazioni RT60
+    if avg_rt60 > 1.5:
+        recommendations.append({
+            'tipo': 'Critico',
+            'area': 'Trattamento Acustico',
+            'descrizione': 'Installare pannelli fonoassorbenti per ridurre RT60',
+            'priorita': 'Alta'
+        })
+    elif avg_rt60 < 0.3:
+        recommendations.append({
+            'tipo': 'Attenzione',
+            'area': 'Trattamento Acustico',
+            'descrizione': 'Aggiungere superfici riflettenti per aumentare RT60',
+            'priorita': 'Media'
+        })
+    
+    # Raccomandazioni modi
+    if len(problematic_modes) > 6:
+        recommendations.append({
+            'tipo': 'Critico',
+            'area': 'Bass Trap',
+            'descrizione': 'Installare bass trap negli angoli per controllo modi',
+            'priorita': 'Alta'
+        })
+    
+    # Raccomandazioni proporzioni
+    if golden_ratio > 0.5:
+        recommendations.append({
+            'tipo': 'Suggerimento',
+            'area': 'Layout',
+            'descrizione': 'Considerare riorganizzazione spazio per migliorare proporzioni',
+            'priorita': 'Bassa'
+        })
+    
+    # Tabella raccomandazioni
+    if recommendations:
+        rec_df = pd.DataFrame(recommendations)
+        st.dataframe(rec_df, use_container_width=True)
+    else:
+        st.success("✅ Nessuna raccomandazione critica - ambiente ben configurato!")
+    
+    # Sezione 4: Export Report
+    st.header("4. Export Report")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button("📄 Genera Report PDF"):
+            # Qui implementeresti la generazione PDF
+            st.info("Funzione PDF in sviluppo - utilizza il report dettagliato qui sopra")
+    
+    with col2:
+        if st.button("📊 Esporta Dati Excel"):
+            # Qui implementeresti l'export Excel
+            st.info("Funzione Excel in sviluppo - utilizza l'export JSON per i dati")
+
+# Footer
 st.sidebar.markdown("---")
 st.sidebar.markdown("🎵 **Calcolatore Acustico Pro**")
 st.sidebar.markdown("Versione 2.0 - Avanzato")
-st.sidebar.markdown("© 2024 Acoustic Tools")
+st.sidebar.markdown("© 2024 - Strumento per professionisti audio")
 
-# ===== ESEGUI APP =====
+# Info tecniche
+with st.sidebar.expander("ℹ️ Info Tecniche"):
+    st.write("""
+    **Formule utilizzate:**
+    - RT60: Sabine (0.161 × V / A)
+    - Modi: f = c/2 × √((nx/L)² + (ny/W)² + (nz/H)²)
+    - SPL: dB = Sens + 10log(P) - 20log(d)
+    
+    **Limitazioni:**
+    - Calcoli semplificati per demo
+    - Non considera diffusione
+    - Assorbimento costante per materiale
+    """)
+
+# Chiamata funzione principale
 if __name__ == "__main__":
     main()
