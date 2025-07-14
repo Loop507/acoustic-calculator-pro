@@ -31,26 +31,6 @@ instrument = st.selectbox("Strumento/Ensemble", [
     "Orchestra", "Sezione Archi", "Ottoni", "Coro", "DJ Set"
 ])
 
-# --- Nuovi input: casse e amplificatore ---
-st.header("🔊 Informazioni Impianto Audio")
-
-speaker_brand = st.selectbox("Marca Cassa", ["JBL", "Yamaha", "QSC", "Altra"])
-if speaker_brand == "Altra":
-    speaker_brand = st.text_input("Inserisci Marca Cassa")
-
-speaker_model = st.text_input("Modello Cassa", value="Inserisci modello")
-
-amplifier_model = st.text_input("Modello Amplificatore", value="Inserisci modello")
-
-speaker_type = st.selectbox("Tipo Diffusore", ["Bass Reflex", "Dipolo", "Pneumatica", "Altro"])
-if speaker_type == "Altro":
-    speaker_type = st.text_input("Descrivi tipo diffusore")
-
-impedance = st.number_input("Impedenza (Ohm)", min_value=1.0, max_value=16.0, value=8.0, step=0.1)
-freq_response = st.text_input("Risposta in Frequenza (Hz)", value="20-20000")
-sensitivity = st.number_input("Sensibilità Reale (dB SPL @ 1W/1m)", min_value=70.0, max_value=120.0, value=90.0, step=0.1)
-max_power = st.number_input("Potenza Massima (W)", min_value=10.0, max_value=2000.0, value=300.0, step=1.0)
-
 # --- Calcoli base ---
 volume = length * width * height
 surface = 2 * (length * width + length * height + width * height)
@@ -104,8 +84,23 @@ if use_type.lower() == "mixing":
     st.write("- Trattamento prime riflessioni (pareti e soffitto)")
     st.write("- Posizionamento dei monitor a triangolo equilatero")
 
+# --- Input dettagli casse e amplificatore ---
+st.header("🔊 Dettagli Casse e Amplificatore")
+
+marca_cassa = st.text_input("Marca Cassa", value="JBL")
+modello_cassa = st.text_input("Modello Cassa", value="EON615")
+
+tipo_diffusore = st.selectbox("Tipo Diffusore", ["Omnidirezionale", "A Tromba"])
+
+impedenza = st.number_input("Impedenza (Ohm)", min_value=2, max_value=16, value=8)
+risposta_freq = st.text_input("Risposta in frequenza (Hz)", value="50-20000")
+sensibilita = st.number_input("Sensibilità (dB SPL @1W/1m)", min_value=70.0, max_value=120.0, value=90.0)
+potenza_massima = st.number_input("Potenza Massima Cassa (W)", min_value=50, value=500)
+
+modello_ampli = st.text_input("Modello Amplificatore", value="Yamaha RX-V6A")
+
 # --- Calcolo amplificazione ---
-st.header("🔊 Calcolo Amplificazione e Numero di Casse")
+st.header("🔊 Amplificazione e Numero di Casse")
 base_watt = math.ceil(volume * 2)
 rt_factor = 0.7 if rt60 > 1.0 else 1.3
 wattage = math.ceil(base_watt * rt_factor)
@@ -124,14 +119,14 @@ else:
 st.metric("Potenza consigliata", f"{wattage} W")
 st.metric("Numero di casse", f"{speakers} ({config})")
 
-# --- Calcolo SPL avanzato con dati utente ---
+# --- Calcolo avanzato SPL ---
 st.header("🔬 Calcolo SPL Avanzato")
 with st.expander("Parametri Avanzati Casse Audio"):
     distanza_ascolto = st.number_input("Distanza dell'ascoltatore (m)", min_value=0.5, value=4.0)
     num_woofer = st.number_input("Numero di woofer", min_value=1, step=1, value=1)
 
-    fattore_direttività = 0 if speaker_type == "Omnidirezionale" else 3
-    spl_effettivo = sensitivity + 10 * math.log10(max_power) - 20 * math.log10(distanza_ascolto) + fattore_direttività + (10 * math.log10(num_woofer))
+    fattore_direttività = 0 if tipo_diffusore == "Omnidirezionale" else 3
+    spl_effettivo = sensibilita + 10 * math.log10(potenza_massima) - 20 * math.log10(distanza_ascolto) + fattore_direttività + (10 * math.log10(num_woofer))
 
     st.metric("SPL stimato all'ascoltatore", f"{spl_effettivo:.1f} dB")
 
@@ -162,25 +157,26 @@ if st.button("📥 Esporta in PDF"):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
+
     pdf.cell(0, 10, "Calcolatore Acustico Pro - Report", ln=True)
     pdf.cell(0, 10, f"Dimensioni Ambiente: {length} x {width} x {height} m", ln=True)
-    pdf.cell(0, 10, f"Volume: {volume:.1f} m3", ln=True)
-    pdf.cell(0, 10, f"Superficie: {surface:.1f} m2", ln=True)
+    pdf.cell(0, 10, f"Volume: {volume:.1f} m³", ln=True)
+    pdf.cell(0, 10, f"Superficie: {surface:.1f} m²", ln=True)
     pdf.cell(0, 10, f"RT60 stimato: {rt60:.2f} s", ln=True)
     pdf.cell(0, 10, f"Frequenza di Schroeder: {schroeder:.0f} Hz", ln=True)
     pdf.cell(0, 10, f"Proporzioni (L/W): {ratio_lw:.2f} -> {ratio_quality}", ln=True)
-    pdf.cell(0, 10, f"Marca Cassa: {speaker_brand}", ln=True)
-    pdf.cell(0, 10, f"Modello Cassa: {speaker_model}", ln=True)
-    pdf.cell(0, 10, f"Modello Amplificatore: {amplifier_model}", ln=True)
-    pdf.cell(0, 10, f"Tipo Diffusore: {speaker_type}", ln=True)
-    pdf.cell(0, 10, f"Impedenza: {impedance} Ohm", ln=True)
-    pdf.cell(0, 10, f"Risposta Frequenza: {freq_response} Hz", ln=True)
-    pdf.cell(0, 10, f"Sensibilità: {sensitivity} dB SPL", ln=True)
-    pdf.cell(0, 10, f"Potenza Massima: {max_power} W", ln=True)
     pdf.cell(0, 10, f"Potenza consigliata: {wattage} W", ln=True)
     pdf.cell(0, 10, f"Numero casse: {speakers} ({config})", ln=True)
     pdf.cell(0, 10, f"SPL stimato all'ascoltatore: {spl_effettivo:.1f} dB", ln=True)
-    pdf.cell(0, 10, f"Adattabilita per {instrument}: {suitability}", ln=True)
+
+    pdf.cell(0, 10, f"Marca Cassa: {marca_cassa}", ln=True)
+    pdf.cell(0, 10, f"Modello Cassa: {modello_cassa}", ln=True)
+    pdf.cell(0, 10, f"Tipo Diffusore: {tipo_diffusore}", ln=True)
+    pdf.cell(0, 10, f"Impedenza: {impedenza} Ohm", ln=True)
+    pdf.cell(0, 10, f"Risposta in Frequenza: {risposta_freq} Hz", ln=True)
+    pdf.cell(0, 10, f"Sensibilità: {sensibilita} dB SPL @1W/1m", ln=True)
+    pdf.cell(0, 10, f"Potenza Massima Cassa: {potenza_massima} W", ln=True)
+    pdf.cell(0, 10, f"Modello Amplificatore: {modello_ampli}", ln=True)
 
     pdf_output = pdf.output(dest='S').encode('latin1', 'replace')
     pdf_buffer = io.BytesIO(pdf_output)
