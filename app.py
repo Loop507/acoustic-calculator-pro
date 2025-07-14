@@ -606,46 +606,46 @@ def main():
             )
 
 st.plotly_chart(fig_room, use_container_width=True)
-        
-        # Calcolo tempi di arrivo
-        st.subheader("Tempi di Arrivo")
-        
-        direct_distance = math.sqrt((listener_x - source_x)**2 + (listener_y - source_y)**2)
-        direct_time = direct_distance / 343  # velocità del suono
-        
-        # Riflessioni principali
-        reflections = []
-        
-        # Parete sinistra
-        refl_dist = math.sqrt((0 - source_x)**2 + (source_y - source_y)**2) + \
-                   math.sqrt((listener_x - 0)**2 + (listener_y - source_y)**2)
-        reflections.append(("Parete Sinistra", refl_dist / 343))
-        
-        # Parete destra
-        refl_dist = math.sqrt((length - source_x)**2 + (source_y - source_y)**2) + \
-                   math.sqrt((listener_x - length)**2 + (listener_y - source_y)**2)
-        reflections.append(("Parete Destra", refl_dist / 343))
-        
-        # Parete posteriore
-        refl_dist = math.sqrt((source_x - source_x)**2 + (0 - source_y)**2) + \
-                   math.sqrt((listener_x - source_x)**2 + (listener_y - 0)**2)
-        reflections.append(("Parete Posteriore", refl_dist / 343))
-        
-        # Parete anteriore
-        refl_dist = math.sqrt((source_x - source_x)**2 + (width - source_y)**2) + \
-                   math.sqrt((listener_x - source_x)**2 + (listener_y - width)**2)
-        reflections.append(("Parete Anteriore", refl_dist / 343))
-        
-        # Tabella tempi
-        reflection_data = []
-        reflection_data.append(("Suono Diretto", direct_time * 1000, 0))
-        
-        for name, time in reflections:
-            delay = (time - direct_time) * 1000
-            reflection_data.append((name, time * 1000, delay))
-        
-        refl_df = pd.DataFrame(reflection_data, columns=["Tipo", "Tempo (ms)", "Ritardo (ms)"])
-        st.dataframe(refl_df.round(2))
+    
+    # Calcolo tempi di arrivo
+    st.subheader("Tempi di Arrivo")
+    
+    direct_distance = math.sqrt((listener_x - source_x)**2 + (listener_y - source_y)**2)
+    direct_time = direct_distance / 343  # velocità del suono
+    
+    # Riflessioni principali
+    reflections = []
+    
+    # Parete sinistra
+    refl_dist = math.sqrt((0 - source_x)**2 + (source_y - source_y)**2) + \
+               math.sqrt((listener_x - 0)**2 + (listener_y - source_y)**2)
+    reflections.append(("Parete Sinistra", refl_dist / 343))
+    
+    # Parete destra
+    refl_dist = math.sqrt((length - source_x)**2 + (source_y - source_y)**2) + \
+               math.sqrt((listener_x - length)**2 + (listener_y - source_y)**2)
+    reflections.append(("Parete Destra", refl_dist / 343))
+    
+    # Parete posteriore
+    refl_dist = math.sqrt((source_x - source_x)**2 + (0 - source_y)**2) + \
+               math.sqrt((listener_x - source_x)**2 + (listener_y - 0)**2)
+    reflections.append(("Parete Posteriore", refl_dist / 343))
+    
+    # Parete anteriore
+    refl_dist = math.sqrt((source_x - source_x)**2 + (width - source_y)**2) + \
+               math.sqrt((listener_x - source_x)**2 + (listener_y - width)**2)
+    reflections.append(("Parete Anteriore", refl_dist / 343))
+    
+    # Tabella tempi
+    reflection_data = []
+    reflection_data.append(("Suono Diretto", direct_time * 1000, 0))
+    
+    for name, time in reflections:
+        delay = (time - direct_time) * 1000
+        reflection_data.append((name, time * 1000, delay))
+    
+    refl_df = pd.DataFrame(reflection_data, columns=["Tipo", "Tempo (ms)", "Ritardo (ms)"])
+    st.dataframe(refl_df.round(2))
 
     elif viz_type == "Analisi Posizionamento":
         st.subheader("Analisi Posizionamento Ottimale")
