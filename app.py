@@ -11,7 +11,7 @@ st.set_page_config(page_title="Calcolatore Acustico Pro", layout="centered")
 # --- Titolo ---
 st.title("🎧 Calcolatore Acustico Pro")
 st.markdown("""
-Analisi acustica completa dell'ambiente per **registrazione**, **mixing**, **strumenti**, **podcast** e **amplificazione live**.
+Analisi acustica dell'ambiente per **registrazione**, **mixing**, **strumenti**, **podcast** e **amplificazione live**.
 """)
 
 # --- Input dimensioni ---
@@ -30,6 +30,26 @@ instrument = st.selectbox("Strumento/Ensemble", [
     "Voce/Podcast", "Pianoforte", "Batteria", "Chitarra acustica",
     "Orchestra", "Sezione Archi", "Ottoni", "Coro", "DJ Set"
 ])
+
+# --- Nuovi input: casse e amplificatore ---
+st.header("🔊 Informazioni Impianto Audio")
+
+speaker_brand = st.selectbox("Marca Cassa", ["JBL", "Yamaha", "QSC", "Altra"])
+if speaker_brand == "Altra":
+    speaker_brand = st.text_input("Inserisci Marca Cassa")
+
+speaker_model = st.text_input("Modello Cassa", value="Inserisci modello")
+
+amplifier_model = st.text_input("Modello Amplificatore", value="Inserisci modello")
+
+speaker_type = st.selectbox("Tipo Diffusore", ["Bass Reflex", "Dipolo", "Pneumatica", "Altro"])
+if speaker_type == "Altro":
+    speaker_type = st.text_input("Descrivi tipo diffusore")
+
+impedance = st.number_input("Impedenza (Ohm)", min_value=1.0, max_value=16.0, value=8.0, step=0.1)
+freq_response = st.text_input("Risposta in Frequenza (Hz)", value="20-20000")
+sensitivity = st.number_input("Sensibilità Reale (dB SPL @ 1W/1m)", min_value=70.0, max_value=120.0, value=90.0, step=0.1)
+max_power = st.number_input("Potenza Massima (W)", min_value=10.0, max_value=2000.0, value=300.0, step=1.0)
 
 # --- Calcoli base ---
 volume = length * width * height
@@ -85,7 +105,7 @@ if use_type.lower() == "mixing":
     st.write("- Posizionamento dei monitor a triangolo equilatero")
 
 # --- Calcolo amplificazione ---
-st.header("🔊 Amplificazione e Numero di Casse")
+st.header("🔊 Calcolo Amplificazione e Numero di Casse")
 base_watt = math.ceil(volume * 2)
 rt_factor = 0.7 if rt60 > 1.0 else 1.3
 wattage = math.ceil(base_watt * rt_factor)
@@ -104,17 +124,14 @@ else:
 st.metric("Potenza consigliata", f"{wattage} W")
 st.metric("Numero di casse", f"{speakers} ({config})")
 
-# --- Calcolo avanzato SPL ---
+# --- Calcolo SPL avanzato con dati utente ---
 st.header("🔬 Calcolo SPL Avanzato")
 with st.expander("Parametri Avanzati Casse Audio"):
-    spl_nominale = st.number_input("SPL (dB) a 1W/1m", min_value=70.0, max_value=110.0, value=90.0)
-    potenza_nominale = st.number_input("Potenza Nominale Cassa (W)", min_value=10.0, value=200.0)
     distanza_ascolto = st.number_input("Distanza dell'ascoltatore (m)", min_value=0.5, value=4.0)
     num_woofer = st.number_input("Numero di woofer", min_value=1, step=1, value=1)
-    tipo_diffusione = st.selectbox("Tipo di diffusione", ["Omnidirezionale", "A Tromba"])
 
-    fattore_direttività = 0 if tipo_diffusione == "Omnidirezionale" else 3
-    spl_effettivo = spl_nominale + 10 * math.log10(potenza_nominale) - 20 * math.log10(distanza_ascolto) + fattore_direttività + (10 * math.log10(num_woofer))
+    fattore_direttività = 0 if speaker_type == "Omnidirezionale" else 3
+    spl_effettivo = sensitivity + 10 * math.log10(max_power) - 20 * math.log10(distanza_ascolto) + fattore_direttività + (10 * math.log10(num_woofer))
 
     st.metric("SPL stimato all'ascoltatore", f"{spl_effettivo:.1f} dB")
 
@@ -152,6 +169,14 @@ if st.button("📥 Esporta in PDF"):
     pdf.cell(0, 10, f"RT60 stimato: {rt60:.2f} s", ln=True)
     pdf.cell(0, 10, f"Frequenza di Schroeder: {schroeder:.0f} Hz", ln=True)
     pdf.cell(0, 10, f"Proporzioni (L/W): {ratio_lw:.2f} -> {ratio_quality}", ln=True)
+    pdf.cell(0, 10, f"Marca Cassa: {speaker_brand}", ln=True)
+    pdf.cell(0, 10, f"Modello Cassa: {speaker_model}", ln=True)
+    pdf.cell(0, 10, f"Modello Amplificatore: {amplifier_model}", ln=True)
+    pdf.cell(0, 10, f"Tipo Diffusore: {speaker_type}", ln=True)
+    pdf.cell(0, 10, f"Impedenza: {impedance} Ohm", ln=True)
+    pdf.cell(0, 10, f"Risposta Frequenza: {freq_response} Hz", ln=True)
+    pdf.cell(0, 10, f"Sensibilità: {sensitivity} dB SPL", ln=True)
+    pdf.cell(0, 10, f"Potenza Massima: {max_power} W", ln=True)
     pdf.cell(0, 10, f"Potenza consigliata: {wattage} W", ln=True)
     pdf.cell(0, 10, f"Numero casse: {speakers} ({config})", ln=True)
     pdf.cell(0, 10, f"SPL stimato all'ascoltatore: {spl_effettivo:.1f} dB", ln=True)
