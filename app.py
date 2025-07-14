@@ -60,18 +60,18 @@ with st.expander("📈 Modi Assiali"):
 # --- Raccomandazioni acustiche ---
 st.header("🧠 Raccomandazioni")
 if rt60 > 1.5:
-    st.subheader("🟥 RT60 troppo alto -> Ambiente riverberante")
-    st.write("- Usa pannelli fonoassorbenti (20–30% delle superfici)")
+    st.subheader("🟥 RT60 troppo alto - Ambiente riverberante")
+    st.write("- Usa pannelli fonoassorbenti (20-30% delle superfici)")
     st.write("- Inserisci bass traps negli angoli")
     st.write("- Aggiungi tende pesanti o tappeti")
 elif rt60 < 0.4:
-    st.subheader("🟨 RT60 troppo basso -> Ambiente troppo secco")
+    st.subheader("🟨 RT60 troppo basso - Ambiente troppo secco")
     st.write("- Aggiungi pannelli diffusivi")
     st.write("- Utilizza superfici riflettenti in alcune zone")
 
 if any(freq < 200 for freq in modes.values()):
-    st.subheader("🟥 Modi assiali problematici < 200 Hz")
-    st.write("- Installa bass traps profondi (> 20cm)")
+    st.subheader("🟥 Modi assiali problematici sotto 200 Hz")
+    st.write("- Installa bass traps profondi (oltre 20 cm)")
     st.write("- Posiziona i diffusori lontano dalle pareti")
 
 if use_type.lower() == "registrazione":
@@ -123,8 +123,8 @@ vol_ok = vol_range[0] <= volume <= vol_range[1]
 suitability = "Eccellente" if rt_ok and vol_ok else "Buona" if rt_ok or vol_ok else "Limitata"
 
 st.write(f"**Adattabilità per {instrument}**: {suitability}")
-st.write(f"RT60 ideale: {rt_range[0]}–{rt_range[1]}s | Attuale: {rt60:.2f}s -> {'✅' if rt_ok else '❌'}")
-st.write(f"Volume ideale: {vol_range[0]}–{vol_range[1]}m³ | Attuale: {volume:.1f}m³ -> {'✅' if vol_ok else '❌'}")
+st.write(f"RT60 ideale: {rt_range[0]}-{rt_range[1]}s | Attuale: {rt60:.2f}s -> {'✅' if rt_ok else '❌'}")
+st.write(f"Volume ideale: {vol_range[0]}-{vol_range[1]}m³ | Attuale: {volume:.1f}m³ -> {'✅' if vol_ok else '❌'}")
 
 # --- Esportazione PDF ---
 if st.button("📥 Esporta in PDF"):
@@ -143,9 +143,9 @@ if st.button("📥 Esporta in PDF"):
         pdf.cell(0, 10, f" - {axis}: {freq:.1f} Hz", ln=True)
     pdf.cell(0, 10, f"Potenza consigliata: {wattage} W", ln=True)
     pdf.cell(0, 10, f"Numero casse: {speakers} ({config})", ln=True)
-    pdf.cell(0, 10, f"Adattabilità per {instrument}: {suitability}", ln=True)
-    pdf.cell(0, 10, f"RT60 ideale: {rt_range[0]}–{rt_range[1]} s", ln=True)
-    pdf.cell(0, 10, f"Volume ideale: {vol_range[0]}–{vol_range[1]} m3", ln=True)
+    pdf.cell(0, 10, f"Adattabilita per {instrument}: {suitability}", ln=True)
+    pdf.cell(0, 10, f"RT60 ideale: {rt_range[0]}-{rt_range[1]} s", ln=True)
+    pdf.cell(0, 10, f"Volume ideale: {vol_range[0]}-{vol_range[1]} m3", ln=True)
 
     pdf_output = pdf.output(dest='S').encode('latin1')
     pdf_buffer = io.BytesIO(pdf_output)
