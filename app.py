@@ -1,259 +1,201 @@
+# app.py
+
 import streamlit as st
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import sqlite3
+import math
+from fpdf import FPDF
+import io
 
-# --- Funzioni di calcolo ---
+# --- Configurazione pagina ---
+st.set_page_config(page_title="Calcolatore Acustico Pro", layout="centered")
 
-def calculate_rt60_per_band(volume, surface_materials, materials_df):
-    """
-    Calcola il tempo di riverberazione RT60 per frequenza,
-    usando il volume e l'area dei materiali con assorbimenti specifici.
-    """
-    freq = materials_df['Frequency'].values
-    total_absorption = np.zeros_like(freq, dtype=float)
+# --- Titolo ---
+st.title("🎧 Calcolatore Acustico Pro")
+st.markdown("""
+Analisi acustica dell'ambiente per **registrazione**, **mixing**, **strumenti**, **podcast** e **amplificazione live**.
+""")
 
-    for material, area in surface_materials.items():
-        if material not in materials_df.columns:
-            continue  # evita errori se manca materiale nel DB
-        absorption_coeff = materials_df[material].values
-        total_absorption += absorption_coeff * area
+# --- Input dimensioni ---
+st.header("📐 Dimensioni Ambiente")
+col1, col2, col3 = st.columns(3)
+with col1:
+    length = st.number_input("Lunghezza (m)", min_value=1.0, value=10.0, step=0.1)
+with col2:
+    width = st.number_input("Larghezza (m)", min_value=1.0, value=8.0, step=0.1)
+with col3:
+    height = st.number_input("Altezza (m)", min_value=2.0, value=3.0, step=0.1)
 
-    # Formula di Sabine
-    with np.errstate(divide='ignore', invalid='ignore'):
-        rt60 = 0.161 * volume / total_absorption
-        rt60 = np.where(total_absorption == 0, np.nan, rt60)
+room_type = st.selectbox("Tipo di ambiente", ["Studio", "Home studio", "Sala prove", "Sala concerti", "Auditorium"])
+use_type = st.selectbox("Uso principale", ["Registrazione", "Mixing", "Rehearsal", "Performance", "Podcast"])
+instrument = st.selectbox("Strumento/Ensemble", [
+    "Voce/Podcast", "Pianoforte", "Batteria", "Chitarra acustica",
+    "Orchestra", "Sezione Archi", "Ottoni", "Coro", "DJ Set"
+])
 
-    return freq, rt60
+# --- Calcoli base ---
+volume = length * width * height
+surface = 2 * (length * width + length * height + width * height)
+rt60_base = 0.161 * volume / (0.25 * surface)
+rt60 = max(0.3, min(2.5, rt60_base))
+schroeder = math.sqrt(rt60 * 340 * 340 / (1.316 * volume))
+modes = {
+    'Lunghezza': 340 / (2 * length),
+    'Larghezza': 340 / (2 * width),
+    'Altezza': 340 / (2 * height)
+}
+ratio_lw = length / width
+ratio_quality = "Ottima" if abs(ratio_lw - 1.618) < 0.3 else "Buona" if abs(ratio_lw - 1.618) < 0.6 else "Da migliorare"
 
-def calculate_room_modes(length, width, height, max_mode=10):
-    """
-    Calcola le frequenze modali principali della stanza.
-    """
-    modes = []
-    c = 343  # velocità del suono in m/s
+# --- Output risultati acustici ---
+st.header("📊 Risultati Acustici")
+st.metric("Volume", f"{volume:.1f} m³")
+st.metric("Superficie", f"{surface:.1f} m²")
+st.metric("RT60 stimato", f"{rt60:.2f} s")
+st.metric("Frequenza di Schroeder", f"{schroeder:.0f} Hz")
+st.write(f"**Proporzioni (L/W)**: {ratio_lw:.2f} -> {ratio_quality}")
 
-    for nx in range(max_mode + 1):
-        for ny in range(max_mode + 1):
-            for nz in range(max_mode + 1):
-                if nx == ny == nz == 0:
-                    continue
-                f = (c / 2) * np.sqrt((nx / length) ** 2 + (ny / width) ** 2 + (nz / height) ** 2)
-                modes.append((nx, ny, nz, f))
-    modes.sort(key=lambda x: x[3])
-    return modes[:100]
+with st.expander("📈 Modi Assiali"):
+    for axis, freq in modes.items():
+        st.write(f"• {axis}: {freq:.1f} Hz")
 
-def calculate_spl_coverage(room_dims, speaker_pos, speaker_power, grid_res=0.5):
-    """
-    Calcola la mappa SPL in 2D sulla base della posizione dell'altoparlante
-    e del suo pattern direttivo semplificato.
-    """
-    length, width, height = room_dims['length'], room_dims['width'], room_dims['height']
-    x = np.arange(0, length + grid_res, grid_res)
-    y = np.arange(0, width + grid_res, grid_res)
-    X, Y = np.meshgrid(x, y)
+# --- Raccomandazioni acustiche ---
+st.header("🧠 Raccomandazioni")
+if rt60 > 1.5:
+    st.subheader("🟥 RT60 troppo alto - Ambiente riverberante")
+    st.write("- Usa pannelli fonoassorbenti (20-30% delle superfici)")
+    st.write("- Inserisci bass traps negli angoli")
+    st.write("- Aggiungi tende pesanti o tappeti")
+elif rt60 < 0.4:
+    st.subheader("🟨 RT60 troppo basso - Ambiente troppo secco")
+    st.write("- Aggiungi pannelli diffusivi")
+    st.write("- Utilizza superfici riflettenti in alcune zone")
 
-    speaker_x, speaker_y = speaker_pos
+if any(freq < 200 for freq in modes.values()):
+    st.subheader("🟥 Modi assiali problematici sotto 200 Hz")
+    st.write("- Installa bass traps profondi (oltre 20 cm)")
+    st.write("- Posiziona i diffusori lontano dalle pareti")
 
-    # Calcolo distanza
-    distances = np.sqrt((X - speaker_x) ** 2 + (Y - speaker_y) ** 2)
-    distances = np.where(distances < 0.1, 0.1, distances)  # evita divisioni per zero
+if use_type.lower() == "registrazione":
+    st.subheader("🎙️ Setup consigliato per Registrazione")
+    st.write("- Crea una zona morta dietro il microfono")
+    st.write("- Isola lateralmente la postazione")
 
-    # Angoli per pattern direttivo
-    angles = np.arctan2(Y - speaker_y, X - speaker_x)  # radianti
-    directivity_factor = np.cos(2 * angles) ** 2  # pattern di direttività semplificato
+if use_type.lower() == "mixing":
+    st.subheader("🎛️ Setup consigliato per Mixing")
+    st.write("- Trattamento prime riflessioni (pareti e soffitto)")
+    st.write("- Posizionamento dei monitor a triangolo equilatero")
 
-    spl = speaker_power * directivity_factor / (distances ** 2)
-    spl_db = 20 * np.log10(spl)
-    return X, Y, spl_db
+# --- Input dettagli casse e amplificatore ---
+st.header("🔊 Dettagli Casse e Amplificatore")
 
-# --- Setup DB e dati materiali ---
+marca_cassa = st.text_input("Marca Cassa", value="JBL")
+modello_cassa = st.text_input("Modello Cassa", value="EON615")
 
-@st.cache_resource
-def init_database():
-    conn = sqlite3.connect(':memory:')
-    c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS projects (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT,
-        room_length REAL,
-        room_width REAL,
-        room_height REAL,
-        speaker_x REAL,
-        speaker_y REAL,
-        speaker_power REAL
-    )''')
-    conn.commit()
-    return conn
+tipo_cassa = st.selectbox("Tipo Cassa", ["Bass Reflex", "Dipolo", "Pneumatica"])
+tipo_diffusore = st.selectbox("Tipo Diffusore", ["Omnidirezionale", "A Tromba"])
 
-@st.cache_data
-def load_materials_db():
-    # Esempio dati materiali; in produzione caricare da CSV o DB esterno
-    data = {
-        'Frequency': [125, 250, 500, 1000, 2000, 4000],
-        'Pareti': [0.10, 0.05, 0.04, 0.03, 0.02, 0.02],
-        'Soffitto': [0.15, 0.10, 0.07, 0.05, 0.04, 0.03],
-        'Pavimento': [0.20, 0.15, 0.10, 0.07, 0.05, 0.04],
-        'Trattamento': [0.50, 0.60, 0.65, 0.70, 0.75, 0.80]
-    }
-    return pd.DataFrame(data)
+impedenza = st.number_input("Impedenza (Ohm)", min_value=2, max_value=16, value=8)
+risposta_freq = st.text_input("Risposta in frequenza (Hz)", value="50-20000")
 
-# --- Funzioni di UI ---
+sensibilita = st.number_input("Sensibilità (dB SPL @1W/1m)", min_value=70.0, max_value=130.0, value=90.0)
+spl_nominale = st.number_input("SPL Nominale Cassa (dB SPL)", min_value=70.0, max_value=130.0, value=95.0)
 
-def save_project(conn, project):
-    c = conn.cursor()
-    c.execute('''
-        INSERT INTO projects (name, room_length, room_width, room_height, speaker_x, speaker_y, speaker_power)
-        VALUES (?, ?, ?, ?, ?, ?, ?)''',
-        (project['name'], project['room_dimensions']['length'], project['room_dimensions']['width'], project['room_dimensions']['height'],
-         project['speaker_position'][0], project['speaker_position'][1], project['speaker_power']))
-    conn.commit()
+potenza_massima = st.number_input("Potenza Massima Cassa (W)", min_value=50, max_value=5000, value=500)
+potenza_nominale_cassa = st.number_input("Potenza Nominale Cassa (W)", min_value=10, max_value=5000, value=300)
 
-def load_projects(conn):
-    c = conn.cursor()
-    c.execute('SELECT id, name FROM projects')
-    return c.fetchall()
+modello_ampli = st.text_input("Modello Amplificatore", value="Yamaha RX-V6A")
 
-def load_project_by_id(conn, project_id):
-    c = conn.cursor()
-    c.execute('SELECT * FROM projects WHERE id = ?', (project_id,))
-    row = c.fetchone()
-    if row:
-        return {
-            'id': row[0],
-            'name': row[1],
-            'room_dimensions': {'length': row[2], 'width': row[3], 'height': row[4]},
-            'speaker_position': (row[5], row[6]),
-            'speaker_power': row[7]
-        }
-    return None
+# --- Calcolo amplificazione ---
+st.header("🔊 Amplificazione e Numero di Casse")
+base_watt = math.ceil(volume * 2)
+rt_factor = 0.7 if rt60 > 1.0 else 1.3
+wattage = math.ceil(base_watt * rt_factor)
 
-# --- Applicazione principale ---
+max_dim = max(length, width)
+if max_dim > 15:
+    speakers = 4
+    config = "Stereo + Fill"
+elif max_dim > 8:
+    speakers = 2
+    config = "Stereo"
+else:
+    speakers = 1
+    config = "Mono"
 
-def main():
-    st.set_page_config(page_title="Acoustic Calculator Pro", layout="wide")
-    conn = init_database()
-    materials_db = load_materials_db()
+st.metric("Potenza consigliata", f"{wattage} W")
+st.metric("Numero di casse", f"{speakers} ({config})")
 
-    if 'current_project' not in st.session_state:
-        st.session_state.current_project = {
-            'name': 'Nuovo Progetto',
-            'room_dimensions': {'length': 5.0, 'width': 4.0, 'height': 3.0},
-            'speaker_position': (2.0, 2.0),
-            'speaker_power': 1.0,
-        }
-    if 'saved_projects' not in st.session_state:
-        st.session_state.saved_projects = []
+potenza_finale_ampli = potenza_nominale_cassa * speakers
+st.metric("Potenza finale Amplificatore consigliata", f"{potenza_finale_ampli} W")
 
-    st.title("🎵 Acoustic Calculator Pro")
+# --- Calcolo avanzato SPL ---
+st.header("🔬 Calcolo SPL Avanzato")
+with st.expander("Parametri Avanzati Casse Audio"):
+    distanza_ascoltatore = st.number_input("Distanza dell'Ascoltatore (m)", min_value=0.1, value=4.0)
+    num_woofer = st.number_input("Numero di Woofer", min_value=1, step=1, value=1)
 
-    page = st.sidebar.selectbox("Seleziona pagina", [
-        "🏠 Home",
-        "🎛️ Configurazione",
-        "🔬 Analisi Avanzata",
-        "💾 Salva/Carica Progetti"
-    ])
+    fattore_direttivita = 0 if tipo_diffusore == "Omnidirezionale" else 3
+    spl_effettivo = spl_nominale + 10 * math.log10(potenza_massima) - 20 * math.log10(distanza_ascoltatore) + fattore_direttivita + (10 * math.log10(num_woofer))
 
-    # --- Pagina Home ---
-    if page == "🏠 Home":
-        st.write("Benvenuto nell'app per il calcolo acustico. Usa la sidebar per navigare.")
+    st.metric("SPL stimato all'ascoltatore", f"{spl_effettivo:.1f} dB")
 
-    # --- Pagina Configurazione ---
-    elif page == "🎛️ Configurazione":
-        st.header("Configurazione stanza e altoparlante")
+# --- Adattabilità per strumento selezionato ---
+st.header("🎼 Adattabilità per Strumento")
+instrument_data = {
+    "Voce/Podcast": ([0.3, 0.6], [20, 80]),
+    "Pianoforte": ([0.6, 1.2], [50, 200]),
+    "Batteria": ([0.4, 0.8], [30, 150]),
+    "Chitarra acustica": ([0.5, 1.0], [25, 100]),
+    "Orchestra": ([1.0, 2.0], [200, 1000]),
+    "Sezione Archi": ([0.8, 1.5], [100, 300]),
+    "Ottoni": ([0.6, 1.2], [80, 250]),
+    "Coro": ([1.0, 1.8], [150, 500]),
+    "DJ Set": ([0.3, 0.7], [50, 300]),
+}
+rt_range, vol_range = instrument_data[instrument]
+rt_ok = rt_range[0] <= rt60 <= rt_range[1]
+vol_ok = vol_range[0] <= volume <= vol_range[1]
+suitability = "Eccellente" if rt_ok and vol_ok else "Buona" if rt_ok or vol_ok else "Limitata"
 
-        dims = st.session_state.current_project['room_dimensions']
-        dims['length'] = st.number_input("Lunghezza stanza (m)", min_value=1.0, max_value=30.0, value=dims['length'])
-        dims['width'] = st.number_input("Larghezza stanza (m)", min_value=1.0, max_value=30.0, value=dims['width'])
-        dims['height'] = st.number_input("Altezza stanza (m)", min_value=2.0, max_value=10.0, value=dims['height'])
+st.write(f"**Adattabilità per {instrument}**: {suitability}")
+st.write(f"RT60 ideale: {rt_range[0]}-{rt_range[1]}s | Attuale: {rt60:.2f}s -> {'✅' if rt_ok else '❌'}")
+st.write(f"Volume ideale: {vol_range[0]}-{vol_range[1]}m³ | Attuale: {volume:.1f}m³ -> {'✅' if vol_ok else '❌'}")
 
-        speaker_pos = st.session_state.current_project['speaker_position']
-        x = st.number_input("Posizione X altoparlante (m)", min_value=0.0, max_value=dims['length'], value=speaker_pos[0])
-        y = st.number_input("Posizione Y altoparlante (m)", min_value=0.0, max_value=dims['width'], value=speaker_pos[1])
-        st.session_state.current_project['speaker_position'] = (x, y)
+# --- Esportazione PDF ---
+if st.button("📥 Esporta in PDF"):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
 
-        power = st.number_input("Potenza altoparlante (W)", min_value=0.1, max_value=10.0, value=st.session_state.current_project['speaker_power'])
-        st.session_state.current_project['speaker_power'] = power
+    pdf.cell(0, 10, "Calcolatore Acustico Pro - Report", ln=True)
+    pdf.cell(0, 10, f"Dimensioni Ambiente: {length} x {width} x {height} m", ln=True)
+    pdf.cell(0, 10, f"Volume: {volume:.1f} m³", ln=True)
+    pdf.cell(0, 10, f"Superficie: {surface:.1f} m²", ln=True)
+    pdf.cell(0, 10, f"RT60 stimato: {rt60:.2f} s", ln=True)
+    pdf.cell(0, 10, f"Frequenza di Schroeder: {schroeder:.0f} Hz", ln=True)
+    pdf.cell(0, 10, f"Proporzioni (L/W): {ratio_lw:.2f} -> {ratio_quality}", ln=True)
+    pdf.cell(0, 10, f"Potenza consigliata: {wattage} W", ln=True)
+    pdf.cell(0, 10, f"Numero casse: {speakers} ({config})", ln=True)
+    pdf.cell(0, 10, f"Potenza finale Amplificatore consigliata: {potenza_finale_ampli} W", ln=True)
+    pdf.cell(0, 10, f"SPL stimato all'ascoltatore: {spl_effettivo:.1f} dB", ln=True)
 
-        st.success("Configurazione aggiornata!")
+    pdf.cell(0, 10, f"Marca Cassa: {marca_cassa}", ln=True)
+    pdf.cell(0, 10, f"Modello Cassa: {modello_cassa}", ln=True)
+    pdf.cell(0, 10, f"Tipo Cassa: {tipo_cassa}", ln=True)
+    pdf.cell(0, 10, f"Tipo Diffusore: {tipo_diffusore}", ln=True)
+    pdf.cell(0, 10, f"Impedenza: {impedenza} Ohm", ln=True)
+    pdf.cell(0, 10, f"Risposta in Frequenza: {risposta_freq} Hz", ln=True)
+    pdf.cell(0, 10, f"Sensibilità: {sensibilita} dB SPL @1W/1m", ln=True)
+    pdf.cell(0, 10, f"SPL Nominale: {spl_nominale} dB SPL", ln=True)
+    pdf.cell(0, 10, f"Potenza Massima Cassa: {potenza_massima} W", ln=True)
+    pdf.cell(0, 10, f"Potenza Nominale Cassa: {potenza_nominale_cassa} W", ln=True)
+    pdf.cell(0, 10, f"Modello Amplificatore: {modello_ampli}", ln=True)
 
-    # --- Pagina Analisi Avanzata ---
-    elif page == "🔬 Analisi Avanzata":
-        st.header("Analisi Acustica Avanzata")
+    pdf_output = pdf.output(dest='S').encode('latin1', 'replace')
+    pdf_buffer = io.BytesIO(pdf_output)
 
-        dims = st.session_state.current_project['room_dimensions']
-        length, width, height = dims['length'], dims['width'], dims['height']
-        volume = length * width * height
-        st.write(f"Volume stanza: {volume:.2f} m³")
-
-        surface_materials = {
-            'Pareti': 2 * (length * height + width * height) * 0.8,
-            'Soffitto': length * width * 1.0,
-            'Pavimento': length * width * 0.8,
-            'Trattamento': 2 * (length * height + width * height) * 0.2
-        }
-
-        freq, rt60 = calculate_rt60_per_band(volume, surface_materials, materials_db)
-
-        st.subheader("Tempo di riverberazione (RT60) per frequenza")
-        fig, ax = plt.subplots()
-        ax.plot(freq, rt60, marker='o')
-        ax.set_xlabel('Frequenza (Hz)')
-        ax.set_ylabel('RT60 (s)')
-        ax.set_title('Tempo di riverberazione stimato')
-        ax.grid(True)
-        st.pyplot(fig)
-
-        st.subheader("Frequenze modali principali")
-        modes = calculate_room_modes(length, width, height, max_mode=8)
-        modes_df = pd.DataFrame(modes, columns=['nx', 'ny', 'nz', 'Freq (Hz)'])
-        st.dataframe(modes_df.style.format({'Freq (Hz)': '{:.2f}'}))
-
-        st.subheader("Mappa SPL approssimata a 2D")
-        speaker_pos = st.session_state.current_project['speaker_position']
-        speaker_power = st.session_state.current_project['speaker_power']
-        X, Y, spl_db = calculate_spl_coverage(dims, speaker_pos, speaker_power)
-
-        fig2, ax2 = plt.subplots(figsize=(8, 6))
-        c = ax2.contourf(X, Y, spl_db, levels=50, cmap='inferno')
-        ax2.plot(speaker_pos[0], speaker_pos[1], 'bo', label='Altoparlante')
-        ax2.set_xlabel('Lunghezza (m)')
-        ax2.set_ylabel('Larghezza (m)')
-        ax2.set_title('Distribuzione SPL stimata (dB)')
-        fig2.colorbar(c, ax=ax2, label='SPL (dB)')
-        ax2.legend()
-        st.pyplot(fig2)
-
-    # --- Pagina Salvataggio e caricamento ---
-    elif page == "💾 Salva/Carica Progetti":
-        st.header("Salva e Carica Progetti")
-
-        project_name = st.text_input("Nome progetto", value=st.session_state.current_project['name'])
-
-        if st.button("Salva progetto"):
-            st.session_state.current_project['name'] = project_name or "Progetto Senza Nome"
-            save_project(conn, st.session_state.current_project)
-            st.success("Progetto salvato!")
-
-        st.subheader("Progetti salvati")
-        projects = load_projects(conn)
-
-        for pid, pname in projects:
-            col1, col2, col3 = st.columns([4, 1, 1])
-            col1.write(pname)
-            if col2.button("Carica", key=f"load_{pid}"):
-                proj = load_project_by_id(conn, pid)
-                if proj:
-                    st.session_state.current_project = proj
-                    st.success(f"Progetto '{pname}' caricato!")
-                    st.experimental_rerun()
-            if col3.button("Elimina", key=f"del_{pid}"):
-                c = conn.cursor()
-                c.execute("DELETE FROM projects WHERE id = ?", (pid,))
-                conn.commit()
-                st.success(f"Progetto '{pname}' eliminato!")
-                st.experimental_rerun()
-
-if __name__ == "__main__":
-    main()
+    st.download_button(
+        label="Download PDF",
+        data=pdf_buffer,
+        file_name="calcolatore_acustico_pro_report.pdf",
+        mime="application/pdf"
+    )
