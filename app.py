@@ -1,5 +1,3 @@
-perchè questo non è per github?    # acoustic_calculator_pro.py
-
 import streamlit as st
 import math
 
