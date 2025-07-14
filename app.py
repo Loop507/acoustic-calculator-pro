@@ -1,18 +1,21 @@
+# app.py
+
 import streamlit as st
 import math
 from fpdf import FPDF
 import io
 
-# Configurazione pagina
+# --- Configurazione pagina ---
 st.set_page_config(page_title="Calcolatore Acustico Pro", layout="centered")
 
-# Titolo
-st.title("🎧 Calcolatore Acustico Pro")
+# --- Titolo ---
+st.title("\U0001F3A7 Calcolatore Acustico Pro")
 st.markdown("""
 Analisi acustica completa dell'ambiente per **registrazione**, **mixing**, **strumenti**, **podcast** e **amplificazione live**.
 """)
 
-# Input dimensioni
+# --- Input dimensioni ---
+st.header("\U0001F4D0 Dimensioni Ambiente")
 col1, col2, col3 = st.columns(3)
 with col1:
     length = st.number_input("Lunghezza (m)", min_value=1.0, value=10.0, step=0.1)
@@ -28,7 +31,7 @@ instrument = st.selectbox("Strumento/Ensemble", [
     "Orchestra", "Sezione Archi", "Ottoni", "Coro", "DJ Set"
 ])
 
-# Calcoli
+# --- Calcoli base ---
 volume = length * width * height
 surface = 2 * (length * width + length * height + width * height)
 rt60_base = 0.161 * volume / (0.25 * surface)
@@ -42,67 +45,67 @@ modes = {
 ratio_lw = length / width
 ratio_quality = "Ottima" if abs(ratio_lw - 1.618) < 0.3 else "Buona" if abs(ratio_lw - 1.618) < 0.6 else "Da migliorare"
 
-# Output risultati acustici
-st.header("📊 Risultati Acustici")
+# --- Output risultati acustici ---
+st.header("\U0001F4CA Risultati Acustici")
 st.metric("Volume", f"{volume:.1f} m³")
 st.metric("Superficie", f"{surface:.1f} m²")
 st.metric("RT60 stimato", f"{rt60:.2f} s")
 st.metric("Frequenza di Schroeder", f"{schroeder:.0f} Hz")
-st.write(f"**Proporzioni (L/W)**: {ratio_lw:.2f} → {ratio_quality}")
+st.write(f"**Proporzioni (L/W)**: {ratio_lw:.2f} -> {ratio_quality}")
 
-with st.expander("📈 Modi Assiali"):
+with st.expander("\U0001F4C8 Modi Assiali"):
     for axis, freq in modes.items():
-        st.write(f"• {axis}: {freq:.1f} Hz")
+        st.write(f"\u2022 {axis}: {freq:.1f} Hz")
 
-# Raccomandazioni
-st.header("🧠 Raccomandazioni")
+# --- Raccomandazioni acustiche ---
+st.header("\U0001F9E0 Raccomandazioni")
 if rt60 > 1.5:
-    st.subheader("🟥 RT60 troppo alto → Ambiente riverberante")
+    st.subheader("\U0001F7E5 RT60 troppo alto -> Ambiente riverberante")
     st.write("- Usa pannelli fonoassorbenti (20–30% delle superfici)")
     st.write("- Inserisci bass traps negli angoli")
     st.write("- Aggiungi tende pesanti o tappeti")
 elif rt60 < 0.4:
-    st.subheader("🟨 RT60 troppo basso → Ambiente troppo secco")
+    st.subheader("\U0001F7E8 RT60 troppo basso -> Ambiente troppo secco")
     st.write("- Aggiungi pannelli diffusivi")
     st.write("- Utilizza superfici riflettenti in alcune zone")
 
 if any(freq < 200 for freq in modes.values()):
-    st.subheader("🟥 Modi assiali problematici < 200 Hz")
+    st.subheader("\U0001F7E5 Modi assiali problematici < 200 Hz")
     st.write("- Installa bass traps profondi (> 20cm)")
     st.write("- Posiziona i diffusori lontano dalle pareti")
 
 if use_type.lower() == "registrazione":
-    st.subheader("🎙️ Setup consigliato per Registrazione")
+    st.subheader("\U0001F3A7 Setup consigliato per Registrazione")
     st.write("- Crea una zona morta dietro il microfono")
     st.write("- Isola lateralmente la postazione")
 
 if use_type.lower() == "mixing":
-    st.subheader("🎛️ Setup consigliato per Mixing")
+    st.subheader("\U0001F3A7 Setup consigliato per Mixing")
     st.write("- Trattamento prime riflessioni (pareti e soffitto)")
     st.write("- Posizionamento dei monitor a triangolo equilatero")
 
-# Amplificazione e casse
-st.header("🔊 Amplificazione e Posizionamento Casse")
+# --- Calcolo amplificazione ---
+st.header("\U0001F50A Amplificazione e Numero di Casse")
 base_watt = math.ceil(volume * 2)
 rt_factor = 0.7 if rt60 > 1.0 else 1.3
 wattage = math.ceil(base_watt * rt_factor)
 
 max_dim = max(length, width)
 if max_dim > 15:
+    speakers = 4
     config = "Stereo + Fill"
 elif max_dim > 8:
+    speakers = 2
     config = "Stereo"
 else:
+    speakers = 1
     config = "Mono"
 
-num_speakers = st.selectbox("Numero di casse", [1, 2, 4])
-has_sub = st.checkbox("Includi Subwoofer")
-
 st.metric("Potenza consigliata", f"{wattage} W")
-st.metric("Configurazione casse", f"{num_speakers} casse {'con subwoofer' if has_sub else 'senza subwoofer'} ({config})")
+st.metric("Numero di casse", f"{speakers} ({config})")
 
-# Adattabilità strumento
-st.header("🎼 Adattabilità per Strumento")
+# --- Adattabilità per strumento selezionato ---
+st.header("\U0001F3BC Adattabilità per Strumento")
 instrument_data = {
     "Voce/Podcast": ([0.3, 0.6], [20, 80]),
     "Pianoforte": ([0.6, 1.2], [50, 200]),
@@ -120,59 +123,36 @@ vol_ok = vol_range[0] <= volume <= vol_range[1]
 suitability = "Eccellente" if rt_ok and vol_ok else "Buona" if rt_ok or vol_ok else "Limitata"
 
 st.write(f"**Adattabilità per {instrument}**: {suitability}")
-st.write(f"RT60 ideale: {rt_range[0]}–{rt_range[1]}s | Attuale: {rt60:.2f}s → {'✅' if rt_ok else '❌'}")
-st.write(f"Volume ideale: {vol_range[0]}–{vol_range[1]}m³ | Attuale: {volume:.1f}m³ → {'✅' if vol_ok else '❌'}")
+st.write(f"RT60 ideale: {rt_range[0]}–{rt_range[1]}s | Attuale: {rt60:.2f}s -> {'✅' if rt_ok else '❌'}")
+st.write(f"Volume ideale: {vol_range[0]}–{vol_range[1]}m³ | Attuale: {volume:.1f}m³ -> {'✅' if vol_ok else '❌'}")
 
-# Esporta PDF
-if st.button("Genera e scarica PDF report"):
+# --- Esportazione PDF ---
+if st.button("\U0001F4C5 Esporta in PDF"):
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_font("Arial", "B", 16)
-    pdf.cell(0, 10, "Calcolatore Acustico Pro - Report", ln=True, align="C")
-    pdf.ln(10)
-
-    pdf.set_font("Arial", "", 12)
-    pdf.cell(0, 10, f"Dimensioni ambiente: {length}m x {width}m x {height}m", ln=True)
-    pdf.cell(0, 10, f"Tipo ambiente: {room_type}", ln=True)
-    pdf.cell(0, 10, f"Uso principale: {use_type}", ln=True)
-    pdf.cell(0, 10, f"Strumento/Ensemble: {instrument}", ln=True)
-    pdf.ln(5)
-
-    pdf.cell(0, 10, f"Volume: {volume:.1f} m³", ln=True)
-    pdf.cell(0, 10, f"Superficie: {surface:.1f} m²", ln=True)
+    pdf.set_font("Arial", size=12)
+    pdf.cell(0, 10, "Calcolatore Acustico Pro - Report", ln=True)
+    pdf.cell(0, 10, f"Dimensioni Ambiente: {length} x {width} x {height} m", ln=True)
+    pdf.cell(0, 10, f"Volume: {volume:.1f} m3", ln=True)
+    pdf.cell(0, 10, f"Superficie: {surface:.1f} m2", ln=True)
     pdf.cell(0, 10, f"RT60 stimato: {rt60:.2f} s", ln=True)
     pdf.cell(0, 10, f"Frequenza di Schroeder: {schroeder:.0f} Hz", ln=True)
-    pdf.cell(0, 10, f"Proporzioni (L/W): {ratio_lw:.2f} → {ratio_quality}", ln=True)
-    pdf.ln(5)
-
+    pdf.cell(0, 10, f"Proporzioni (L/W): {ratio_lw:.2f} -> {ratio_quality}", ln=True)
     pdf.cell(0, 10, "Modi assiali:", ln=True)
     for axis, freq in modes.items():
-        pdf.cell(0, 10, f"  • {axis}: {freq:.1f} Hz", ln=True)
-    pdf.ln(5)
-
-    pdf.cell(0, 10, "Raccomandazioni:", ln=True)
-    if rt60 > 1.5:
-        pdf.cell(0, 10, " - RT60 troppo alto → Usa pannelli fonoassorbenti e bass traps", ln=True)
-    elif rt60 < 0.4:
-        pdf.cell(0, 10, " - RT60 troppo basso → Usa pannelli diffusivi e superfici riflettenti", ln=True)
-    else:
-        pdf.cell(0, 10, " - RT60 nei parametri consigliati", ln=True)
-    pdf.ln(5)
-
+        pdf.cell(0, 10, f" - {axis}: {freq:.1f} Hz", ln=True)
     pdf.cell(0, 10, f"Potenza consigliata: {wattage} W", ln=True)
-    pdf.cell(0, 10, f"Configurazione casse: {num_speakers} casse {'con subwoofer' if has_sub else 'senza subwoofer'} ({config})", ln=True)
-    pdf.ln(10)
-
+    pdf.cell(0, 10, f"Numero casse: {speakers} ({config})", ln=True)
     pdf.cell(0, 10, f"Adattabilità per {instrument}: {suitability}", ln=True)
-    pdf.cell(0, 10, f"RT60 ideale: {rt_range[0]}–{rt_range[1]}s | Attuale: {rt60:.2f}s", ln=True)
-    pdf.cell(0, 10, f"Volume ideale: {vol_range[0]}–{vol_range[1]}m³ | Attuale: {volume:.1f}m³", ln=True)
+    pdf.cell(0, 10, f"RT60 ideale: {rt_range[0]}–{rt_range[1]} s", ln=True)
+    pdf.cell(0, 10, f"Volume ideale: {vol_range[0]}–{vol_range[1]} m3", ln=True)
 
-    # Output PDF in memoria come bytes
-    pdf_bytes = pdf.output(dest='S').encode('utf-8')
+    pdf_output = pdf.output(dest='S').encode('latin1')
+    pdf_buffer = io.BytesIO(pdf_output)
 
     st.download_button(
-        label="Scarica PDF",
-        data=pdf_bytes,
-        file_name="acoustic_report.pdf",
+        label="Download PDF",
+        data=pdf_buffer,
+        file_name="calcolatore_acustico_pro_report.pdf",
         mime="application/pdf"
     )
