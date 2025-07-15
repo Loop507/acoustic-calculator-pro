@@ -118,6 +118,10 @@ num_subwoofer = 0
 if use_sub:
     num_subwoofer = st.number_input("Numero di Subwoofer", min_value=1, max_value=8, value=1)
 
+distanza_ascoltatore = st.number_input("Distanza dell'ascoltatore dalle casse (m)", min_value=0.5, max_value=50.0, value=4.0)
+fattore_direttività = 0 if tipo_diffusore == "Omnidirezionale" else 3
+spl_effettivo = sensibilita + 10 * math.log10(potenza_massima) - 20 * math.log10(distanza_ascoltatore) + fattore_direttività + (10 * math.log10(num_woofer))
+
 base_watt = math.ceil(volume * 2)
 rt_factor = 0.7 if rt60 > 1.0 else 1.3
 wattage = math.ceil(base_watt * rt_factor)
@@ -126,3 +130,4 @@ potenza_finale_ampli = potenza_nominale_cassa * (speakers + num_subwoofer)
 st.metric("Potenza consigliata", f"{wattage} W")
 st.metric("Numero di casse totali", f"{speakers} + {num_subwoofer} Subwoofer")
 st.metric("Potenza totale consigliata per Amplificatore", f"{potenza_finale_ampli} W")
+st.metric("SPL stimato all'ascoltatore", f"{spl_effettivo:.1f} dB")
