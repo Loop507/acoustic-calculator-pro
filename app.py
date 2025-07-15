@@ -115,8 +115,10 @@ st.header("🧲 Amplificazione e Numero di Casse")
 speakers = st.selectbox("Numero di Casse", options=[2, 4, 8], index=0)
 use_sub = st.checkbox("Vuoi includere Subwoofer?")
 num_subwoofer = 0
+potenza_nominale_sub = 0
 if use_sub:
     num_subwoofer = st.number_input("Numero di Subwoofer", min_value=1, max_value=8, value=1)
+    potenza_nominale_sub = st.number_input("Potenza Nominale Subwoofer (W)", min_value=50, max_value=2000, value=300)
 
 distanza_ascoltatore = st.number_input("Distanza dell'ascoltatore dalle casse (m)", min_value=0.5, max_value=50.0, value=4.0)
 fattore_direttività = 0 if tipo_diffusore == "Omnidirezionale" else 3
@@ -125,9 +127,48 @@ spl_effettivo = sensibilita + 10 * math.log10(potenza_massima) - 20 * math.log10
 base_watt = math.ceil(volume * 2)
 rt_factor = 0.7 if rt60 > 1.0 else 1.3
 wattage = math.ceil(base_watt * rt_factor)
-potenza_finale_ampli = potenza_nominale_cassa * (speakers + num_subwoofer)
+potenza_finale_ampli = potenza_nominale_cassa * speakers + potenza_nominale_sub * num_subwoofer
 
 st.metric("Potenza consigliata", f"{wattage} W")
 st.metric("Numero di casse totali", f"{speakers} + {num_subwoofer} Subwoofer")
 st.metric("Potenza totale consigliata per Amplificatore", f"{potenza_finale_ampli} W")
 st.metric("SPL stimato all'ascoltatore", f"{spl_effettivo:.1f} dB")
+
+# --- Esportazione PDF ---
+if st.button("📥 Esporta in PDF"):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+
+    pdf.cell(0, 10, "Calcolatore Acustico Pro - Report", ln=True)
+    pdf.cell(0, 10, f"Dimensioni Ambiente: {length} x {width} x {height} m", ln=True)
+    pdf.cell(0, 10, f"Volume: {volume:.1f} m³", ln=True)
+    pdf.cell(0, 10, f"Superficie: {surface:.1f} m²", ln=True)
+    pdf.cell(0, 10, f"RT60 stimato: {rt60:.2f} s", ln=True)
+    pdf.cell(0, 10, f"Frequenza di Schroeder: {schroeder:.0f} Hz", ln=True)
+    pdf.cell(0, 10, f"Proporzioni (L/W): {ratio_lw:.2f} -> {ratio_quality}", ln=True)
+
+    pdf.cell(0, 10, f"Marca Cassa: {marca_cassa}", ln=True)
+    pdf.cell(0, 10, f"Modello Cassa: {modello_cassa}", ln=True)
+    pdf.cell(0, 10, f"Tipo Cassa: {tipo_cassa}", ln=True)
+    pdf.cell(0, 10, f"Tipo Diffusore: {tipo_diffusore}", ln=True)
+    pdf.cell(0, 10, f"Sensibilità: {sensibilita} dB SPL @1W/1m", ln=True)
+    pdf.cell(0, 10, f"Numero Woofer: {num_woofer}", ln=True)
+    pdf.cell(0, 10, f"Potenza Nominale Cassa: {potenza_nominale_cassa} W", ln=True)
+    pdf.cell(0, 10, f"Numero Casse: {speakers}", ln=True)
+    pdf.cell(0, 10, f"Numero Subwoofer: {num_subwoofer}", ln=True)
+    if use_sub:
+        pdf.cell(0, 10, f"Potenza Nominale Subwoofer: {potenza_nominale_sub} W", ln=True)
+    pdf.cell(0, 10, f"Potenza Totale Richiesta Amplificatore: {potenza_finale_ampli} W", ln=True)
+    pdf.cell(0, 10, f"SPL stimato: {spl_effettivo:.1f} dB", ln=True)
+    pdf.cell(0, 10, f"Distanza ascoltatore: {distanza_ascoltatore} m", ln=True)
+
+    pdf_output = pdf.output(dest='S').encode('latin1', 'replace')
+    pdf_buffer = io.BytesIO(pdf_output)
+
+    st.download_button(
+        label="Download PDF",
+        data=pdf_buffer,
+        file_name="calcolatore_acustico_pro_report.pdf",
+        mime="application/pdf"
+    )
