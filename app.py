@@ -4,7 +4,6 @@ import streamlit as st
 import math
 from fpdf import FPDF
 import io
-import plotly.graph_objects as go
 
 # --- Configurazione pagina ---
 st.set_page_config(page_title="Calcolatore Acustico Pro", layout="centered")
@@ -33,11 +32,11 @@ instrument = st.selectbox("Strumento/Ensemble", [
 ])
 
 # --- Materiali delle superfici ---
-st.sidebar.header("🛋️ Materiali delle Superfici")
+st.header("🛋️ Materiali delle Superfici")
 materiali = {}
-materiali["Pareti"] = st.sidebar.selectbox("Pareti", ["Cemento", "Cartongesso", "Legno", "Vetro"])
-materiali["Pavimento"] = st.sidebar.selectbox("Pavimento", ["Parquet", "Moquette", "Piastrelle", "Cemento"])
-materiali["Soffitto"] = st.sidebar.selectbox("Soffitto", ["Cartongesso", "Cemento", "Legno", "Travi a vista"])
+materiali["Pareti"] = st.selectbox("Pareti", ["Cemento", "Cartongesso", "Legno", "Vetro"])
+materiali["Pavimento"] = st.selectbox("Pavimento", ["Parquet", "Moquette", "Piastrelle", "Cemento"])
+materiali["Soffitto"] = st.selectbox("Soffitto", ["Cartongesso", "Cemento", "Legno", "Travi a vista"])
 
 # --- Calcoli base ---
 volume = length * width * height
@@ -93,8 +92,8 @@ if use_type.lower() == "mixing":
     st.write("- Trattamento prime riflessioni (pareti e soffitto)")
     st.write("- Posizionamento dei monitor a triangolo equilatero")
 
-# --- Dettagli Casse Passive ---
-st.header("🔊 Dettagli Casse Passive")
+# --- Dettagli Casse ---
+st.header("🔊 Dettagli Casse")
 marca_cassa = st.text_input("Marca Cassa", value="JBL")
 modello_cassa = st.text_input("Modello Cassa", value="EON615")
 tipo_cassa = st.selectbox("Tipo Cassa", ["Bass Reflex", "Dipolo", "Pneumatica"])
@@ -107,21 +106,17 @@ potenza_massima = st.number_input("Potenza Massima Cassa (W)", min_value=50, max
 potenza_nominale_cassa = st.number_input("Potenza Nominale Cassa (W)", min_value=10, max_value=5000, value=300)
 num_woofer = st.number_input("Numero di Woofer per Cassa", min_value=1, step=1, value=1)
 
-# --- Dettagli Casse Attive ---
-st.header("🔊 Dettagli Casse Attive")
-marca_cassa_attiva = st.text_input("Marca Cassa Attiva", value="Mackie")
-modello_cassa_attiva = st.text_input("Modello Cassa Attiva", value="THUMP15A")
-sensibilita_attiva = st.number_input("Sensibilità Cassa Attiva (dB SPL @1W/1m)", min_value=70.0, max_value=130.0, value=92.0)
-potenza_massima_attiva = st.number_input("Potenza Massima Cassa Attiva (W)", min_value=50, max_value=5000, value=600)
-num_woofer_attiva = st.number_input("Numero di Woofer per Cassa Attiva", min_value=1, step=1, value=1)
-
 # --- Dettagli Amplificatore ---
 st.header("🎚 Dettagli Amplificatore")
 modello_ampli = st.text_input("Modello Amplificatore", value="Yamaha RX-V6A")
 
+# --- Distanza Ascoltatore ---
+st.header("👂 Distanza Ascoltatore")
+distanza_ascoltatore = st.number_input("Distanza dell'ascoltatore dalle casse (m)", min_value=0.5, max_value=50.0, value=4.0)
+
 # --- Amplificazione e Numero di Casse ---
 st.header("🧲 Amplificazione e Numero di Casse")
-speakers = st.selectbox("Numero di Casse Passive", options=[1, 2, 4, 8], index=1)
+speakers = st.selectbox("Numero di Casse", options=[2, 4, 8], index=0)
 use_sub = st.checkbox("Vuoi includere Subwoofer?")
 num_subwoofer = 0
 potenza_nominale_sub = 0
@@ -129,14 +124,8 @@ if use_sub:
     num_subwoofer = st.number_input("Numero di Subwoofer", min_value=1, max_value=8, value=1)
     potenza_nominale_sub = st.number_input("Potenza Nominale Subwoofer (W)", min_value=50, max_value=2000, value=300)
 
-distanza_ascoltatore = st.number_input("Distanza dell'ascoltatore dalle casse (m)", min_value=0.5, max_value=50.0, value=4.0)
-
-# Calcolo SPL stimato considerando casse passive
 fattore_direttività = 0 if tipo_diffusore == "Omnidirezionale" else 3
-spl_effettivo_passive = sensibilita + 10 * math.log10(potenza_massima) - 20 * math.log10(distanza_ascoltatore) + fattore_direttività + (10 * math.log10(num_woofer))
-
-# Calcolo SPL stimato per casse attive
-spl_effettivo_attive = sensibilita_attiva + 10 * math.log10(potenza_massima_attiva) - 20 * math.log10(distanza_ascoltatore) + fattore_direttività + (10 * math.log10(num_woofer_attiva))
+spl_effettivo = sensibilita + 10 * math.log10(potenza_massima) - 20 * math.log10(distanza_ascoltatore) + fattore_direttività + (10 * math.log10(num_woofer))
 
 base_watt = math.ceil(volume * 2)
 rt_factor = 0.7 if rt60 > 1.0 else 1.3
@@ -144,34 +133,9 @@ wattage = math.ceil(base_watt * rt_factor)
 potenza_finale_ampli = potenza_nominale_cassa * speakers + potenza_nominale_sub * num_subwoofer
 
 st.metric("Potenza consigliata", f"{wattage} W")
-st.metric("Numero di casse passive", f"{speakers}")
-st.metric("Numero di subwoofer", f"{num_subwoofer}")
+st.metric("Numero di casse totali", f"{speakers} + {num_subwoofer} Subwoofer")
 st.metric("Potenza totale consigliata per Amplificatore", f"{potenza_finale_ampli} W")
-st.metric("SPL stimato all'ascoltatore (casse passive)", f"{spl_effettivo_passive:.1f} dB")
-st.metric("SPL stimato all'ascoltatore (casse attive)", f"{spl_effettivo_attive:.1f} dB")
-
-# --- Grafico SPL stimato ---
-with st.expander("📊 Visualizza Grafico SPL stimato"):
-    distanze = [i/2 for i in range(1, 21)]  # da 0.5 a 10 m
-    spl_vals_passive = [
-        sensibilita + 10*math.log10(potenza_massima) - 20*math.log10(d) + fattore_direttività + (10*math.log10(num_woofer))
-        for d in distanze
-    ]
-    spl_vals_attive = [
-        sensibilita_attiva + 10*math.log10(potenza_massima_attiva) - 20*math.log10(d) + fattore_direttività + (10*math.log10(num_woofer_attiva))
-        for d in distanze
-    ]
-
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=distanze, y=spl_vals_passive, mode='lines+markers', name='SPL Casse Passive (dB)'))
-    fig.add_trace(go.Scatter(x=distanze, y=spl_vals_attive, mode='lines+markers', name='SPL Casse Attive (dB)'))
-    fig.update_layout(
-        xaxis_title='Distanza ascoltatore (m)',
-        yaxis_title='SPL stimato (dB)',
-        yaxis=dict(range=[min(min(spl_vals_passive), min(spl_vals_attive))-5, max(max(spl_vals_passive), max(spl_vals_attive))+5]),
-        template='plotly_white'
-    )
-    st.plotly_chart(fig, use_container_width=True)
+st.metric("SPL stimato all'ascoltatore", f"{spl_effettivo:.1f} dB")
 
 # --- Esportazione PDF ---
 if st.button("📥 Esporta in PDF"):
@@ -187,32 +151,19 @@ if st.button("📥 Esporta in PDF"):
     pdf.cell(0, 10, f"Frequenza di Schroeder: {schroeder:.0f} Hz", ln=True)
     pdf.cell(0, 10, f"Proporzioni (L/W): {ratio_lw:.2f} -> {ratio_quality}", ln=True)
 
-    pdf.cell(0, 10, f"Materiali Pareti: {materiali['Pareti']}", ln=True)
-    pdf.cell(0, 10, f"Materiali Pavimento: {materiali['Pavimento']}", ln=True)
-    pdf.cell(0, 10, f"Materiali Soffitto: {materiali['Soffitto']}", ln=True)
-
-    pdf.cell(0, 10, f"Marca Cassa Passive: {marca_cassa}", ln=True)
-    pdf.cell(0, 10, f"Modello Cassa Passive: {modello_cassa}", ln=True)
-    pdf.cell(0, 10, f"Tipo Cassa Passive: {tipo_cassa}", ln=True)
-    pdf.cell(0, 10, f"Tipo Diffusore Passive: {tipo_diffusore}", ln=True)
-    pdf.cell(0, 10, f"Sensibilità Passive: {sensibilita} dB SPL @1W/1m", ln=True)
-    pdf.cell(0, 10, f"Numero Woofer Passive: {num_woofer}", ln=True)
-    pdf.cell(0, 10, f"Potenza Nominale Cassa Passive: {potenza_nominale_cassa} W", ln=True)
-
-    pdf.cell(0, 10, f"Marca Cassa Attive: {marca_cassa_attiva}", ln=True)
-    pdf.cell(0, 10, f"Modello Cassa Attive: {modello_cassa_attiva}", ln=True)
-    pdf.cell(0, 10, f"Sensibilità Attive: {sensibilita_attiva} dB SPL @1W/1m", ln=True)
-    pdf.cell(0, 10, f"Potenza Massima Cassa Attiva: {potenza_massima_attiva} W", ln=True)
-    pdf.cell(0, 10, f"Numero Woofer Attive: {num_woofer_attiva}", ln=True)
-
-    pdf.cell(0, 10, f"Modello Amplificatore: {modello_ampli}", ln=True)
-    pdf.cell(0, 10, f"Numero Casse Passive: {speakers}", ln=True)
+    pdf.cell(0, 10, f"Marca Cassa: {marca_cassa}", ln=True)
+    pdf.cell(0, 10, f"Modello Cassa: {modello_cassa}", ln=True)
+    pdf.cell(0, 10, f"Tipo Cassa: {tipo_cassa}", ln=True)
+    pdf.cell(0, 10, f"Tipo Diffusore: {tipo_diffusore}", ln=True)
+    pdf.cell(0, 10, f"Sensibilità: {sensibilita} dB SPL @1W/1m", ln=True)
+    pdf.cell(0, 10, f"Numero Woofer: {num_woofer}", ln=True)
+    pdf.cell(0, 10, f"Potenza Nominale Cassa: {potenza_nominale_cassa} W", ln=True)
+    pdf.cell(0, 10, f"Numero Casse: {speakers}", ln=True)
     pdf.cell(0, 10, f"Numero Subwoofer: {num_subwoofer}", ln=True)
     if use_sub:
         pdf.cell(0, 10, f"Potenza Nominale Subwoofer: {potenza_nominale_sub} W", ln=True)
     pdf.cell(0, 10, f"Potenza Totale Richiesta Amplificatore: {potenza_finale_ampli} W", ln=True)
-    pdf.cell(0, 10, f"SPL stimato (Passive): {spl_effettivo_passive:.1f} dB", ln=True)
-    pdf.cell(0, 10, f"SPL stimato (Active): {spl_effettivo_attive:.1f} dB", ln=True)
+    pdf.cell(0, 10, f"SPL stimato: {spl_effettivo:.1f} dB", ln=True)
     pdf.cell(0, 10, f"Distanza ascoltatore: {distanza_ascoltatore} m", ln=True)
 
     pdf_output = pdf.output(dest='S').encode('latin1', 'replace')
