@@ -4,6 +4,7 @@ import streamlit as st
 import math
 from fpdf import FPDF
 import io
+import plotly.graph_objects as go
 
 # --- Configurazione pagina ---
 st.set_page_config(page_title="Calcolatore Acustico Pro", layout="centered")
@@ -110,5 +111,3 @@ with st.expander("🔌 Verifica setup elettrico/audio"):
     st.checkbox("Collegamenti corretti tra ampli e casse?")
     st.checkbox("Impedanze compatibili ampli ↔ casse?")
     st.checkbox("Alimentazione stabile e filtrata?")
-
-# (Il resto del codice rimane invariato)
