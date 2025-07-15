@@ -15,28 +15,24 @@ Analisi acustica dell'ambiente per **registrazione**, **mixing**, **strumenti**,
 """)
 
 # --- Input dimensioni ---
-st.header("📀 Dimensioni Ambiente")
-col1, col2, col3 = st.columns(3)
-with col1:
-    length = st.number_input("Lunghezza (m)", min_value=1.0, value=10.0, step=0.1)
-with col2:
-    width = st.number_input("Larghezza (m)", min_value=1.0, value=8.0, step=0.1)
-with col3:
-    height = st.number_input("Altezza (m)", min_value=2.0, value=3.0, step=0.1)
+st.sidebar.header("📐 Dimensioni Ambiente")
+length = st.sidebar.number_input("Lunghezza (m)", min_value=1.0, value=10.0, step=0.1)
+width = st.sidebar.number_input("Larghezza (m)", min_value=1.0, value=8.0, step=0.1)
+height = st.sidebar.number_input("Altezza (m)", min_value=2.0, value=3.0, step=0.1)
 
-room_type = st.selectbox("Tipo di ambiente", ["Studio", "Home studio", "Sala prove", "Sala concerti", "Auditorium"])
-use_type = st.selectbox("Uso principale", ["Registrazione", "Mixing", "Rehearsal", "Performance", "Podcast"])
-instrument = st.selectbox("Strumento/Ensemble", [
+room_type = st.sidebar.selectbox("Tipo di ambiente", ["Studio", "Home studio", "Sala prove", "Sala concerti", "Auditorium"])
+use_type = st.sidebar.selectbox("Uso principale", ["Registrazione", "Mixing", "Rehearsal", "Performance", "Podcast"])
+instrument = st.sidebar.selectbox("Strumento/Ensemble", [
     "Voce/Podcast", "Pianoforte", "Batteria", "Chitarra acustica",
     "Orchestra", "Sezione Archi", "Ottoni", "Coro", "DJ Set"
 ])
 
 # --- Materiali delle superfici ---
-st.header("🛋️ Materiali delle Superfici")
+st.sidebar.header("🛋️ Materiali delle Superfici")
 materiali = {}
-materiali["Pareti"] = st.selectbox("Pareti", ["Cemento", "Cartongesso", "Legno", "Vetro"])
-materiali["Pavimento"] = st.selectbox("Pavimento", ["Parquet", "Moquette", "Piastrelle", "Cemento"])
-materiali["Soffitto"] = st.selectbox("Soffitto", ["Cartongesso", "Cemento", "Legno", "Travi a vista"])
+materiali["Pareti"] = st.sidebar.selectbox("Pareti", ["Cemento", "Cartongesso", "Legno", "Vetro"])
+materiali["Pavimento"] = st.sidebar.selectbox("Pavimento", ["Parquet", "Moquette", "Piastrelle", "Cemento"])
+materiali["Soffitto"] = st.sidebar.selectbox("Soffitto", ["Cartongesso", "Cemento", "Legno", "Travi a vista"])
 
 # --- Calcoli base ---
 volume = length * width * height
@@ -92,8 +88,8 @@ if use_type.lower() == "mixing":
     st.write("- Trattamento prime riflessioni (pareti e soffitto)")
     st.write("- Posizionamento dei monitor a triangolo equilatero")
 
-# --- Dettagli Casse ---
-st.header("🔊 Dettagli Casse")
+# --- Dettagli Casse Passive ---
+st.header("🔊 Dettagli Casse Passive")
 marca_cassa = st.text_input("Marca Cassa", value="JBL")
 modello_cassa = st.text_input("Modello Cassa", value="EON615")
 tipo_cassa = st.selectbox("Tipo Cassa", ["Bass Reflex", "Dipolo", "Pneumatica"])
@@ -106,13 +102,17 @@ potenza_massima = st.number_input("Potenza Massima Cassa (W)", min_value=50, max
 potenza_nominale_cassa = st.number_input("Potenza Nominale Cassa (W)", min_value=10, max_value=5000, value=300)
 num_woofer = st.number_input("Numero di Woofer per Cassa", min_value=1, step=1, value=1)
 
+# --- Dettagli Casse Attive (Placeholder per futuro uso) ---
+with st.expander("🔌 Casse Attive (opzionale)"):
+    st.write("Funzionalità in arrivo per l'inserimento dettagliato delle casse attive.")
+
 # --- Dettagli Amplificatore ---
 st.header("🎚 Dettagli Amplificatore")
 modello_ampli = st.text_input("Modello Amplificatore", value="Yamaha RX-V6A")
 
 # --- Amplificazione e Numero di Casse ---
 st.header("🧲 Amplificazione e Numero di Casse")
-speakers = st.selectbox("Numero di Casse", options=[2, 4, 8], index=0)
+speakers = st.selectbox("Numero di Casse", options=[1, 2, 4, 8], index=1)
 use_sub = st.checkbox("Vuoi includere Subwoofer?")
 num_subwoofer = 0
 potenza_nominale_sub = 0
